@@ -1,12 +1,22 @@
-import os
-import json
-import uuid
+"""
+Lumen Chatbot UI — Flask backend
+"""
+from __future__ import annotations
+
 import asyncio
-import threading
-from datetime import datetime
+import json
+import os
+import uuid
+from concurrent.futures import ThreadPoolExecutor
+from datetime import datetime, timezone
 from pathlib import Path
-from flask import Flask, request, jsonify, Response, render_template, stream_with_context
+from typing import Any, Generator
+
+from flask import Flask, Response, jsonify, render_template, request, stream_with_context
 from flask_cors import CORS
+from openai import OpenAI
+
+# ── App setup ─────────────────────────────────────────────────────────────────
 
 app = Flask(__name__)
 CORS(app)
@@ -16,140 +26,231 @@ CONVERSATIONS_DIR.mkdir(exist_ok=True)
 
 MCP_CONFIG_FILE = Path("mcp.json")
 
-# ── MCP helpers ──────────────────────────────────────────────────────────────
+# ── MCP helpers ───────────────────────────────────────────────────────────────
 
-def load_mcp_config():
+def load_mcp_config() -> dict:
+    """Load MCP server configuration from disk, returning an empty config if absent."""
     if MCP_CONFIG_FILE.exists():
-        with open(MCP_CONFIG_FILE) as f:
-            return json.load(f)
+        return json.loads(MCP_CONFIG_FILE.read_text())
     return {"mcpServers": {}}
 
 
-def save_mcp_config(config):
-    with open(MCP_CONFIG_FILE, "w") as f:
-        json.dump(config, f, indent=2)
+def save_mcp_config(config: dict) -> None:
+    """Persist MCP server configuration to disk."""
+    MCP_CONFIG_FILE.write_text(json.dumps(config, indent=2))
 
 
-async def get_mcp_tools(server_name: str, server_config: dict):
-    """Connect to an MCP server and list its tools."""
-    from mcp import ClientSession, StdioServerParameters
+def _build_server_params(server_config: dict) -> Any:
+    """Construct StdioServerParameters from a server config dict (lazy-imported)."""
+    from mcp import StdioServerParameters  # optional dependency
+    return StdioServerParameters(
+        command=server_config.get("command", ""),
+        args=server_config.get("args", []),
+        env={**os.environ, **server_config.get("env", {})},
+    )
+
+
+async def fetch_mcp_server_tools(server_name: str, server_config: dict) -> list[dict]:
+    """Connect to an MCP server and return its available tool definitions."""
+    from mcp import ClientSession
     from mcp.client.stdio import stdio_client
 
-    cmd = server_config.get("command", "")
-    args = server_config.get("args", [])
-    env_extra = server_config.get("env", {})
-    env = {**os.environ, **env_extra}
-
-    params = StdioServerParameters(command=cmd, args=args, env=env)
-    tools = []
+    params = _build_server_params(server_config)
+    tools: list[dict] = []
     try:
-        async with stdio_client(params) as (r, w):
-            async with ClientSession(r, w) as session:
+        async with stdio_client(params) as (reader, writer):
+            async with ClientSession(reader, writer) as session:
                 await session.initialize()
-                result = await session.list_tools()
-                for t in result.tools:
+                for tool in (await session.list_tools()).tools:
                     tools.append({
                         "server": server_name,
-                        "name": t.name,
-                        "description": t.description or "",
-                        "inputSchema": t.inputSchema if hasattr(t, "inputSchema") else {},
+                        "name": tool.name,
+                        "description": tool.description or "",
+                        "inputSchema": getattr(tool, "inputSchema", {}),
                     })
-    except Exception as e:
-        print(f"[MCP] Error listing tools from {server_name}: {e}")
+    except Exception as exc:
+        print(f"[MCP] Failed to list tools from '{server_name}': {exc}")
     return tools
 
 
-async def call_mcp_tool(server_name: str, server_config: dict, tool_name: str, arguments: dict):
-    """Call a tool on an MCP server and return the result."""
-    from mcp import ClientSession, StdioServerParameters
+async def invoke_mcp_tool(
+    server_name: str,
+    server_config: dict,
+    tool_name: str,
+    arguments: dict,
+) -> str:
+    """Call a single MCP tool and return its text output."""
+    from mcp import ClientSession
     from mcp.client.stdio import stdio_client
 
-    cmd = server_config.get("command", "")
-    args = server_config.get("args", [])
-    env_extra = server_config.get("env", {})
-    env = {**os.environ, **env_extra}
-
-    params = StdioServerParameters(command=cmd, args=args, env=env)
+    params = _build_server_params(server_config)
     try:
-        async with stdio_client(params) as (r, w):
-            async with ClientSession(r, w) as session:
+        async with stdio_client(params) as (reader, writer):
+            async with ClientSession(reader, writer) as session:
                 await session.initialize()
                 result = await session.call_tool(tool_name, arguments)
-                parts = []
-                for c in result.content:
-                    if hasattr(c, "text"):
-                        parts.append(c.text)
-                    else:
-                        parts.append(str(c))
-                return "\n".join(parts)
-    except Exception as e:
-        return f"Error calling tool {tool_name}: {e}"
+                return "\n".join(
+                    c.text if hasattr(c, "text") else str(c)
+                    for c in result.content
+                )
+    except Exception as exc:
+        return f"Error calling tool '{tool_name}': {exc}"
 
 
-def run_async(coro):
-    """Run an async coroutine from sync context."""
+def run_async(coro) -> Any:
+    """Run an async coroutine safely from a synchronous (Flask) context."""
     try:
         loop = asyncio.get_event_loop()
         if loop.is_running():
-            import concurrent.futures
-            with concurrent.futures.ThreadPoolExecutor() as pool:
-                future = pool.submit(asyncio.run, coro)
-                return future.result()
-        else:
-            return loop.run_until_complete(coro)
+            with ThreadPoolExecutor(max_workers=1) as pool:
+                return pool.submit(asyncio.run, coro).result()
+        return loop.run_until_complete(coro)
     except RuntimeError:
         return asyncio.run(coro)
 
 
-# ── Conversation helpers ──────────────────────────────────────────────────────
+# ── Conversation store ────────────────────────────────────────────────────────
 
-def list_conversations():
-    convs = []
-    for f in sorted(CONVERSATIONS_DIR.glob("*.json"), key=lambda x: x.stat().st_mtime, reverse=True):
+def _conversation_path(conv_id: str) -> Path:
+    return CONVERSATIONS_DIR / f"{conv_id}.json"
+
+
+def list_conversations() -> list[dict]:
+    """Return all conversations as summaries, sorted by most-recently modified."""
+    results: list[dict] = []
+    files = sorted(
+        CONVERSATIONS_DIR.glob("*.json"),
+        key=lambda p: p.stat().st_mtime,
+        reverse=True,
+    )
+    for path in files:
         try:
-            with open(f) as fp:
-                data = json.load(fp)
-            convs.append({
-                "id": f.stem,
+            data = json.loads(path.read_text())
+            results.append({
+                "id": path.stem,
                 "title": data.get("title", "Untitled"),
                 "updated_at": data.get("updated_at", ""),
                 "message_count": len(data.get("messages", [])),
             })
         except Exception:
             pass
-    return convs
+    return results
 
 
-def load_conversation(conv_id: str):
-    path = CONVERSATIONS_DIR / f"{conv_id}.json"
-    if path.exists():
-        with open(path) as f:
-            return json.load(f)
-    return None
+def load_conversation(conv_id: str) -> dict | None:
+    path = _conversation_path(conv_id)
+    return json.loads(path.read_text()) if path.exists() else None
 
 
-def save_conversation(conv_id: str, data: dict):
-    data["updated_at"] = datetime.utcnow().isoformat()
-    with open(CONVERSATIONS_DIR / f"{conv_id}.json", "w") as f:
-        json.dump(data, f, indent=2)
+def save_conversation(conv_id: str, data: dict) -> dict:
+    """Stamp updated_at and write the conversation to disk, returning the saved data."""
+    data["updated_at"] = datetime.now(timezone.utc).isoformat()
+    _conversation_path(conv_id).write_text(json.dumps(data, indent=2))
+    return data
 
 
-def delete_conversation(conv_id: str):
-    path = CONVERSATIONS_DIR / f"{conv_id}.json"
+def delete_conversation(conv_id: str) -> bool:
+    path = _conversation_path(conv_id)
     if path.exists():
         path.unlink()
         return True
     return False
 
 
+def create_conversation(title: str = "New Conversation") -> dict:
+    """Create, persist, and return a blank conversation."""
+    conv_id = str(uuid.uuid4())
+    data = {
+        "id": conv_id,
+        "title": title,
+        "messages": [],
+        "created_at": datetime.now(timezone.utc).isoformat(),
+    }
+    return save_conversation(conv_id, data)
+
+
+# ── OpenAI client factory ─────────────────────────────────────────────────────
+
+def build_openai_client(api_key: str, api_base: str) -> OpenAI:
+    return OpenAI(
+        api_key=api_key or "sk-placeholder",
+        base_url=api_base or "https://api.openai.com/v1",
+    )
+
+
+# ── SSE streaming ─────────────────────────────────────────────────────────────
+
+def _sse_event(payload: dict) -> str:
+    """Format a dict as a Server-Sent Event string."""
+    return f"data: {json.dumps(payload)}\n\n"
+
+
+def _merge_tool_call_chunk(store: dict[int, dict], chunk) -> None:
+    """Accumulate a streaming tool-call delta into *store* (indexed by chunk index)."""
+    idx = chunk.index
+    if idx not in store:
+        store[idx] = {"id": chunk.id or "", "function": {"name": "", "arguments": ""}}
+    if chunk.id:
+        store[idx]["id"] = chunk.id
+    if chunk.function:
+        store[idx]["function"]["name"] += chunk.function.name or ""
+        store[idx]["function"]["arguments"] += chunk.function.arguments or ""
+
+
+def stream_chat_completion(
+    client: OpenAI,
+    model: str,
+    messages: list[dict],
+    tools: list[dict],
+) -> Generator[str, None, None]:
+    """Yield SSE strings for a streaming OpenAI chat completion."""
+    try:
+        request_kwargs: dict[str, Any] = {
+            "model": model,
+            "messages": messages,
+            "stream": True,
+        }
+        if tools:
+            request_kwargs["tools"] = tools
+            request_kwargs["tool_choice"] = "auto"
+
+        accumulated_tool_calls: dict[int, dict] = {}
+
+        for chunk in client.chat.completions.create(**request_kwargs):
+            delta = chunk.choices[0].delta if chunk.choices else None
+            if delta is None:
+                continue
+
+            if delta.content:
+                yield _sse_event({"type": "text", "content": delta.content})
+
+            if delta.tool_calls:
+                for tc in delta.tool_calls:
+                    _merge_tool_call_chunk(accumulated_tool_calls, tc)
+
+            finish_reason = chunk.choices[0].finish_reason if chunk.choices else None
+            if finish_reason == "tool_calls":
+                yield _sse_event({
+                    "type": "tool_calls",
+                    "calls": list(accumulated_tool_calls.values()),
+                })
+
+        yield "data: [DONE]\n\n"
+
+    except Exception as exc:
+        yield _sse_event({"type": "error", "message": str(exc)})
+        yield "data: [DONE]\n\n"
+
+
 # ── Routes ────────────────────────────────────────────────────────────────────
 
 @app.route("/")
-def index():
+def index() -> str:
     return render_template("index.html")
 
 
 # Conversations CRUD
+
 @app.route("/api/conversations", methods=["GET"])
 def api_list_conversations():
     return jsonify(list_conversations())
@@ -157,19 +258,12 @@ def api_list_conversations():
 
 @app.route("/api/conversations", methods=["POST"])
 def api_create_conversation():
-    conv_id = str(uuid.uuid4())
-    data = {
-        "id": conv_id,
-        "title": request.json.get("title", "New Conversation"),
-        "messages": [],
-        "created_at": datetime.utcnow().isoformat(),
-    }
-    save_conversation(conv_id, data)
-    return jsonify(data)
+    title = (request.json or {}).get("title", "New Conversation")
+    return jsonify(create_conversation(title)), 201
 
 
 @app.route("/api/conversations/<conv_id>", methods=["GET"])
-def api_get_conversation(conv_id):
+def api_get_conversation(conv_id: str):
     data = load_conversation(conv_id)
     if data is None:
         return jsonify({"error": "Not found"}), 404
@@ -177,23 +271,22 @@ def api_get_conversation(conv_id):
 
 
 @app.route("/api/conversations/<conv_id>", methods=["PUT"])
-def api_update_conversation(conv_id):
-    data = load_conversation(conv_id) or {}
-    body = request.json or {}
-    data.update(body)
-    data["id"] = conv_id
-    save_conversation(conv_id, data)
-    return jsonify(data)
+def api_update_conversation(conv_id: str):
+    data = load_conversation(conv_id) or {"id": conv_id}
+    data.update(request.json or {})
+    data["id"] = conv_id  # guard against accidental id override
+    return jsonify(save_conversation(conv_id, data))
 
 
 @app.route("/api/conversations/<conv_id>", methods=["DELETE"])
-def api_delete_conversation(conv_id):
+def api_delete_conversation(conv_id: str):
     if delete_conversation(conv_id):
         return jsonify({"ok": True})
     return jsonify({"error": "Not found"}), 404
 
 
 # MCP config
+
 @app.route("/api/mcp/config", methods=["GET"])
 def api_get_mcp_config():
     return jsonify(load_mcp_config())
@@ -207,111 +300,56 @@ def api_save_mcp_config():
 
 @app.route("/api/mcp/tools", methods=["GET"])
 def api_list_mcp_tools():
-    config = load_mcp_config()
-    all_tools = []
-    for name, srv in config.get("mcpServers", {}).items():
-        tools = run_async(get_mcp_tools(name, srv))
-        all_tools.extend(tools)
+    servers = load_mcp_config().get("mcpServers", {})
+    all_tools: list[dict] = []
+    for server_name, server_cfg in servers.items():
+        all_tools.extend(run_async(fetch_mcp_server_tools(server_name, server_cfg)))
     return jsonify(all_tools)
 
 
 @app.route("/api/mcp/call", methods=["POST"])
 def api_call_mcp_tool():
     body = request.json or {}
-    server_name = body.get("server")
-    tool_name = body.get("tool")
-    arguments = body.get("arguments", {})
+    server_name: str = body.get("server", "")
+    tool_name: str = body.get("tool", "")
+    arguments: dict = body.get("arguments", {})
 
-    config = load_mcp_config()
-    server_config = config.get("mcpServers", {}).get(server_name)
+    server_config = load_mcp_config().get("mcpServers", {}).get(server_name)
     if not server_config:
-        return jsonify({"error": f"Server '{server_name}' not found"}), 404
+        return jsonify({"error": f"MCP server '{server_name}' not found"}), 404
 
-    result = run_async(call_mcp_tool(server_name, server_config, tool_name, arguments))
+    result = run_async(invoke_mcp_tool(server_name, server_config, tool_name, arguments))
     return jsonify({"result": result})
 
 
 # Streaming chat
+
 @app.route("/api/chat/stream", methods=["POST"])
 def api_chat_stream():
     body = request.json or {}
-    api_base = body.get("api_base", "https://api.openai.com/v1")
-    api_key = body.get("api_key", "")
-    model = body.get("model", "gpt-4o")
-    messages = body.get("messages", [])
-    tools_payload = body.get("tools", [])  # already-formatted tool definitions
+    client = build_openai_client(body.get("api_key", ""), body.get("api_base", ""))
+    model: str = body.get("model", "gpt-4o")
+    messages: list = body.get("messages", [])
+    tools: list = body.get("tools", [])
 
-    from openai import OpenAI
-
-    client = OpenAI(api_key=api_key or "sk-placeholder", base_url=api_base)
-
-    def generate():
-        try:
-            kwargs = dict(model=model, messages=messages, stream=True)
-            if tools_payload:
-                kwargs["tools"] = tools_payload
-                kwargs["tool_choice"] = "auto"
-
-            stream = client.chat.completions.create(**kwargs)
-
-            collected_tool_calls = {}
-            collected_content = []
-
-            for chunk in stream:
-                delta = chunk.choices[0].delta if chunk.choices else None
-                if delta is None:
-                    continue
-
-                # Text content
-                if delta.content:
-                    collected_content.append(delta.content)
-                    yield f"data: {json.dumps({'type': 'text', 'content': delta.content})}\n\n"
-
-                # Tool call accumulation
-                if delta.tool_calls:
-                    for tc in delta.tool_calls:
-                        idx = tc.index
-                        if idx not in collected_tool_calls:
-                            collected_tool_calls[idx] = {
-                                "id": tc.id or "",
-                                "function": {"name": "", "arguments": ""},
-                            }
-                        if tc.id:
-                            collected_tool_calls[idx]["id"] = tc.id
-                        if tc.function:
-                            if tc.function.name:
-                                collected_tool_calls[idx]["function"]["name"] += tc.function.name
-                            if tc.function.arguments:
-                                collected_tool_calls[idx]["function"]["arguments"] += tc.function.arguments
-
-                finish = chunk.choices[0].finish_reason if chunk.choices else None
-                if finish == "tool_calls":
-                    calls = list(collected_tool_calls.values())
-                    yield f"data: {json.dumps({'type': 'tool_calls', 'calls': calls})}\n\n"
-
-            yield "data: [DONE]\n\n"
-        except Exception as e:
-            yield f"data: {json.dumps({'type': 'error', 'message': str(e)})}\n\n"
-            yield "data: [DONE]\n\n"
-
-    return Response(stream_with_context(generate()), mimetype="text/event-stream",
-                    headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})
+    return Response(
+        stream_with_context(stream_chat_completion(client, model, messages, tools)),
+        mimetype="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+    )
 
 
-# Model fetch
+# Model listing
+
 @app.route("/api/models", methods=["POST"])
 def api_fetch_models():
     body = request.json or {}
-    api_base = body.get("api_base", "https://api.openai.com/v1")
-    api_key = body.get("api_key", "")
-
-    from openai import OpenAI
-    client = OpenAI(api_key=api_key or "sk-placeholder", base_url=api_base)
+    client = build_openai_client(body.get("api_key", ""), body.get("api_base", ""))
     try:
-        models = [m.id for m in client.models.list()]
-        return jsonify({"models": sorted(models)})
-    except Exception as e:
-        return jsonify({"error": str(e)}), 400
+        model_ids = sorted(m.id for m in client.models.list())
+        return jsonify({"models": model_ids})
+    except Exception as exc:
+        return jsonify({"error": str(exc)}), 400
 
 
 if __name__ == "__main__":

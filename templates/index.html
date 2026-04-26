@@ -19,7 +19,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
 
 <style>
-/* ── Reset & Variables ── */
+/* ── Reset & Variables ─────────────────────────────────────────── */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
@@ -49,7 +49,7 @@ body {
   display: flex;
 }
 
-/* ── Sidebar ── */
+/* ── Sidebar ───────────────────────────────────────────────────── */
 #sidebar {
   width: var(--sidebar-w);
   min-width: var(--sidebar-w);
@@ -70,12 +70,7 @@ body {
   justify-content: space-between;
 }
 
-.logo {
-  font-size: 1.25rem;
-  font-weight: 600;
-  letter-spacing: -.5px;
-  color: var(--text);
-}
+.logo { font-size: 1.25rem; font-weight: 600; letter-spacing: -.5px; color: var(--text); }
 .logo span { color: var(--accent); }
 
 #btn-new-chat {
@@ -163,7 +158,7 @@ body {
 .sidebar-tab:hover { background: var(--surface2); color: var(--text); }
 .sidebar-tab.active { background: var(--accent); border-color: var(--accent); color: #fff; }
 
-/* ── Main ── */
+/* ── Main ──────────────────────────────────────────────────────── */
 #main {
   flex: 1;
   display: flex;
@@ -173,11 +168,11 @@ body {
   position: relative;
 }
 
-/* ── Panels ── */
+/* ── Panels ────────────────────────────────────────────────────── */
 .panel { display: none; flex: 1; overflow: hidden; flex-direction: column; }
 .panel.active { display: flex; }
 
-/* ── Chat Panel ── */
+/* ── Chat Panel ────────────────────────────────────────────────── */
 #chat-header {
   padding: 16px 24px;
   border-bottom: 1px solid var(--border);
@@ -275,10 +270,7 @@ body {
   font-size: .88rem;
   font-family: 'DM Mono', monospace;
 }
-.msg-content th, .msg-content td {
-  border: 1px solid var(--border);
-  padding: 6px 12px;
-}
+.msg-content th, .msg-content td { border: 1px solid var(--border); padding: 6px 12px; }
 .msg-content th { background: var(--surface3); }
 .msg-content code:not(pre code) {
   font-family: 'DM Mono', monospace;
@@ -298,6 +290,7 @@ body {
   margin: .6em 0;
 }
 .msg-content pre code { font-family: 'DM Mono', monospace; font-size: .83rem; }
+
 .code-copy {
   position: absolute; top: 8px; right: 8px;
   background: var(--surface3); border: 1px solid var(--border);
@@ -318,7 +311,7 @@ body {
 }
 @keyframes blink { 50% { opacity: 0; } }
 
-/* Tool call / confirmation */
+/* Tool call confirmation */
 .tool-confirm-box {
   background: var(--surface2);
   border: 1px solid var(--warning);
@@ -328,11 +321,23 @@ body {
   font-family: 'DM Mono', monospace;
   font-size: .8rem;
 }
-.tool-confirm-box .tc-header {
+.tool-confirm-header {
   display: flex; align-items: center; gap: 8px;
   color: var(--warning);
   font-weight: 500;
   margin-bottom: 10px;
+}
+.tool-confirm-name-row {
+  margin-bottom: 8px;
+  font-family: 'DM Mono', monospace;
+  font-size: .78rem;
+  color: var(--text2);
+}
+.tool-confirm-args-label {
+  margin-bottom: 6px;
+  font-family: 'DM Mono', monospace;
+  font-size: .72rem;
+  color: var(--text3);
 }
 .tc-name { color: var(--accent2); font-weight: 500; }
 .tc-args {
@@ -354,14 +359,12 @@ body {
   font-family: 'DM Mono', monospace; font-size: .74rem;
   cursor: pointer; border: 1px solid; transition: all .15s;
 }
-.tc-btn.approve {
-  background: rgba(79,209,197,.12); border-color: var(--accent2); color: var(--accent2);
-}
+.tc-btn.approve { background: rgba(79,209,197,.12); border-color: var(--accent2); color: var(--accent2); }
 .tc-btn.approve:hover { background: rgba(79,209,197,.25); }
-.tc-btn.deny {
-  background: rgba(248,113,113,.1); border-color: var(--danger); color: var(--danger);
-}
+.tc-btn.deny { background: rgba(248,113,113,.1); border-color: var(--danger); color: var(--danger); }
 .tc-btn.deny:hover { background: rgba(248,113,113,.2); }
+.tc-decision-approved { color: var(--accent2); font-family: 'DM Mono', monospace; font-size: .76rem; }
+.tc-decision-denied   { color: var(--danger);  font-family: 'DM Mono', monospace; font-size: .76rem; }
 
 /* Tool result */
 .tool-result-box {
@@ -389,11 +392,7 @@ body {
   padding: 16px 24px;
   background: var(--surface);
 }
-.input-wrap {
-  max-width: 812px;
-  margin: 0 auto;
-  position: relative;
-}
+.input-wrap { max-width: 812px; margin: 0 auto; position: relative; }
 #user-input {
   width: 100%;
   background: var(--surface2);
@@ -437,7 +436,7 @@ body {
   margin-left: auto; margin-right: auto;
 }
 
-/* ── Settings Panel ── */
+/* ── Settings Panel ────────────────────────────────────────────── */
 #settings-panel {
   padding: 32px 36px;
   overflow-y: auto;
@@ -446,41 +445,24 @@ body {
 #settings-panel::-webkit-scrollbar { width: 4px; }
 #settings-panel::-webkit-scrollbar-thumb { background: var(--border); }
 
-.settings-section {
-  max-width: 640px;
-  margin: 0 auto 36px;
-}
+.settings-section { max-width: 640px; margin: 0 auto 36px; }
 .settings-section h2 {
-  font-size: 1rem;
-  font-weight: 600;
-  color: var(--text);
-  margin-bottom: 18px;
-  padding-bottom: 10px;
-  border-bottom: 1px solid var(--border);
-  font-family: 'Fraunces', serif;
-  letter-spacing: -.3px;
+  font-size: 1rem; font-weight: 600; color: var(--text);
+  margin-bottom: 18px; padding-bottom: 10px; border-bottom: 1px solid var(--border);
+  font-family: 'Fraunces', serif; letter-spacing: -.3px;
 }
 .field { margin-bottom: 16px; }
 .field label {
   display: block;
-  font-family: 'DM Mono', monospace;
-  font-size: .72rem;
-  color: var(--text2);
-  letter-spacing: .5px;
-  margin-bottom: 6px;
+  font-family: 'DM Mono', monospace; font-size: .72rem;
+  color: var(--text2); letter-spacing: .5px; margin-bottom: 6px;
   text-transform: uppercase;
 }
 .field input, .field select, .field textarea {
   width: 100%;
-  background: var(--surface2);
-  border: 1px solid var(--border);
-  border-radius: 7px;
-  color: var(--text);
-  font-family: 'DM Mono', monospace;
-  font-size: .84rem;
-  padding: 9px 12px;
-  outline: none;
-  transition: border-color .15s;
+  background: var(--surface2); border: 1px solid var(--border); border-radius: 7px;
+  color: var(--text); font-family: 'DM Mono', monospace; font-size: .84rem;
+  padding: 9px 12px; outline: none; transition: border-color .15s;
 }
 .field input:focus, .field select:focus, .field textarea:focus { border-color: var(--accent); }
 .field textarea { resize: vertical; min-height: 120px; }
@@ -490,66 +472,36 @@ body {
 .field-row .field { flex: 1; margin-bottom: 0; }
 
 .btn-primary {
-  background: var(--accent);
-  color: #fff;
-  border: none;
-  border-radius: 7px;
-  padding: 9px 18px;
-  font-family: 'DM Mono', monospace;
-  font-size: .78rem;
-  cursor: pointer;
-  transition: opacity .15s;
-  letter-spacing: .3px;
+  background: var(--accent); color: #fff; border: none; border-radius: 7px;
+  padding: 9px 18px; font-family: 'DM Mono', monospace; font-size: .78rem;
+  cursor: pointer; transition: opacity .15s; letter-spacing: .3px;
 }
 .btn-primary:hover { opacity: .85; }
-
 .btn-secondary {
-  background: var(--surface3);
-  color: var(--text2);
-  border: 1px solid var(--border);
-  border-radius: 7px;
-  padding: 9px 18px;
-  font-family: 'DM Mono', monospace;
-  font-size: .78rem;
-  cursor: pointer;
-  transition: all .15s;
-  letter-spacing: .3px;
+  background: var(--surface3); color: var(--text2); border: 1px solid var(--border);
+  border-radius: 7px; padding: 9px 18px; font-family: 'DM Mono', monospace;
+  font-size: .78rem; cursor: pointer; transition: all .15s; letter-spacing: .3px;
 }
 .btn-secondary:hover { color: var(--text); border-color: var(--text3); }
 
-.model-list {
-  display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px;
-}
+.model-list { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
 .model-chip {
-  padding: 4px 10px;
-  border-radius: 20px;
-  border: 1px solid var(--border);
-  font-family: 'DM Mono', monospace;
-  font-size: .72rem;
-  color: var(--text2);
-  cursor: pointer;
-  transition: all .15s;
+  padding: 4px 10px; border-radius: 20px; border: 1px solid var(--border);
+  font-family: 'DM Mono', monospace; font-size: .72rem; color: var(--text2);
+  cursor: pointer; transition: all .15s;
 }
 .model-chip:hover { border-color: var(--accent); color: var(--accent); }
 .model-chip.selected { background: var(--accent); border-color: var(--accent); color: #fff; }
 
 .status-msg {
-  font-family: 'DM Mono', monospace;
-  font-size: .75rem;
-  padding: 8px 12px;
-  border-radius: 6px;
-  margin-top: 10px;
-  display: none;
+  font-family: 'DM Mono', monospace; font-size: .75rem;
+  padding: 8px 12px; border-radius: 6px; margin-top: 10px; display: none;
 }
-.status-msg.ok { background: rgba(79,209,197,.1); color: var(--accent2); border: 1px solid rgba(79,209,197,.3); }
-.status-msg.err { background: rgba(248,113,113,.1); color: var(--danger); border: 1px solid rgba(248,113,113,.3); }
+.status-msg.ok  { background: rgba(79,209,197,.1);  color: var(--accent2); border: 1px solid rgba(79,209,197,.3); }
+.status-msg.err { background: rgba(248,113,113,.1); color: var(--danger);  border: 1px solid rgba(248,113,113,.3); }
 
-/* ── MCP Panel ── */
-#mcp-panel {
-  padding: 32px 36px;
-  overflow-y: auto;
-  background: var(--bg);
-}
+/* ── MCP Panel ─────────────────────────────────────────────────── */
+#mcp-panel { padding: 32px 36px; overflow-y: auto; background: var(--bg); }
 #mcp-panel::-webkit-scrollbar { width: 4px; }
 #mcp-panel::-webkit-scrollbar-thumb { background: var(--border); }
 
@@ -559,78 +511,52 @@ body {
   margin-bottom: 18px; padding-bottom: 10px; border-bottom: 1px solid var(--border);
   font-family: 'Fraunces', serif;
 }
+.mcp-inner h2.tools-heading { margin-top: 28px; }
+.mcp-btn-row { display: flex; gap: 10px; margin-bottom: 24px; }
 #mcp-config-editor {
-  width: 100%;
-  background: var(--code-bg);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  color: var(--accent2);
-  font-family: 'DM Mono', monospace;
-  font-size: .8rem;
-  padding: 14px;
-  outline: none;
-  min-height: 240px;
-  resize: vertical;
-  tab-size: 2;
+  width: 100%; background: var(--code-bg); border: 1px solid var(--border);
+  border-radius: 8px; color: var(--accent2); font-family: 'DM Mono', monospace;
+  font-size: .8rem; padding: 14px; outline: none; min-height: 240px;
+  resize: vertical; tab-size: 2;
 }
 #mcp-config-editor:focus { border-color: var(--accent); }
 
 .tool-card {
-  background: var(--surface2);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 12px 14px;
-  margin-bottom: 8px;
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: 8px; padding: 12px 14px; margin-bottom: 8px;
 }
 .tool-card-header { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
-.tool-card-name {
-  font-family: 'DM Mono', monospace;
-  font-size: .82rem;
-  color: var(--accent2);
-  font-weight: 500;
-}
+.tool-card-name { font-family: 'DM Mono', monospace; font-size: .82rem; color: var(--accent2); font-weight: 500; }
 .tool-card-server {
-  font-family: 'DM Mono', monospace;
-  font-size: .68rem;
-  color: var(--text3);
-  background: var(--surface3);
-  padding: 2px 7px;
-  border-radius: 10px;
+  font-family: 'DM Mono', monospace; font-size: .68rem; color: var(--text3);
+  background: var(--surface3); padding: 2px 7px; border-radius: 10px;
 }
 .tool-card-desc { font-size: .82rem; color: var(--text2); }
+.no-tools-label { font-family: 'DM Mono', monospace; font-size: .78rem; color: var(--text3); }
 
-/* ── Empty state ── */
+/* ── Empty state ───────────────────────────────────────────────── */
 #empty-state {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  color: var(--text3);
-  gap: 12px;
-  padding: 40px;
-  text-align: center;
+  flex: 1; display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  color: var(--text3); gap: 12px; padding: 40px; text-align: center;
 }
 #empty-state .es-icon { font-size: 2.5rem; opacity: .5; }
 #empty-state .es-title { font-size: 1.1rem; color: var(--text2); font-weight: 600; }
 #empty-state .es-sub { font-family: 'DM Mono', monospace; font-size: .78rem; max-width: 280px; line-height: 1.6; }
 
 /* Toasts */
-#toast-container { position: fixed; bottom: 24px; right: 24px; z-index: 9999; display: flex; flex-direction: column; gap: 8px; }
+#toast-container {
+  position: fixed; bottom: 24px; right: 24px; z-index: 9999;
+  display: flex; flex-direction: column; gap: 8px;
+}
 .toast {
-  background: var(--surface2);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 10px 16px;
-  font-family: 'DM Mono', monospace;
-  font-size: .78rem;
-  color: var(--text);
-  animation: slideIn .2s ease;
-  max-width: 300px;
+  background: var(--surface2); border: 1px solid var(--border); border-radius: 8px;
+  padding: 10px 16px; font-family: 'DM Mono', monospace; font-size: .78rem;
+  color: var(--text); animation: slideIn .2s ease; max-width: 300px;
 }
 @keyframes slideIn { from { transform: translateX(20px); opacity:0; } to { transform:none; opacity:1; } }
 
-/* ── Responsive ── */
+/* ── Responsive ────────────────────────────────────────────────── */
 @media (max-width: 680px) {
   #sidebar { width: 200px; min-width: 200px; }
 }
@@ -688,7 +614,6 @@ body {
   <div class="panel" id="settings-panel">
     <div class="settings-section">
       <h2>API Configuration</h2>
-
       <div class="field">
         <label>API Base URL</label>
         <input type="text" id="api-base" placeholder="https://api.openai.com/v1" />
@@ -697,14 +622,11 @@ body {
         <label>API Key</label>
         <input type="password" id="api-key" placeholder="sk-…" autocomplete="off" />
       </div>
-
       <div class="field-row" style="margin-bottom:16px;">
         <button class="btn-primary" id="btn-fetch-models">Fetch Models</button>
         <button class="btn-secondary" id="btn-save-settings">Save Settings</button>
       </div>
-
       <div id="settings-status" class="status-msg"></div>
-
       <div class="model-list" id="model-list"></div>
     </div>
 
@@ -714,7 +636,6 @@ body {
         <textarea id="system-prompt" placeholder="You are a helpful assistant…"></textarea>
       </div>
     </div>
-
   </div>
 
   <!-- MCP Panel -->
@@ -725,14 +646,16 @@ body {
         <label>mcp.json</label>
         <textarea id="mcp-config-editor" spellcheck="false"></textarea>
       </div>
-      <div style="display:flex;gap:10px;margin-bottom:24px;">
+      <div class="mcp-btn-row">
         <button class="btn-primary" id="btn-save-mcp">Save Config</button>
         <button class="btn-secondary" id="btn-reload-tools">Reload Tools</button>
       </div>
       <div id="mcp-status" class="status-msg"></div>
 
-      <h2 style="margin-top:28px;">Available Tools</h2>
-      <div id="tool-list"><div style="font-family:'DM Mono',monospace;font-size:.78rem;color:var(--text3);">No tools loaded — click Reload Tools</div></div>
+      <h2 class="tools-heading">Available Tools</h2>
+      <div id="tool-list">
+        <div class="no-tools-label">No tools loaded — click Reload Tools</div>
+      </div>
     </div>
   </div>
 
@@ -741,17 +664,17 @@ body {
 <div id="toast-container"></div>
 
 <script>
-// ══════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════
 // STATE
-// ══════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════
 const state = {
   convId: null,
-  messages: [],       // [{role, content}] — sent to API
-  displayLog: [],     // [{type, role, content} | {type:'tool_result', name, result}] — for rendering
-  mcpTools: [],       // raw tools from server
+  messages: [],      // [{role, content}] — sent to the API
+  displayLog: [],    // [{type, role, content} | {type:'tool_result', name, result}] — for rendering
+  mcpTools: [],      // tool definitions fetched from MCP servers
   isStreaming: false,
 
-  // Settings (persisted to localStorage)
+  // Settings (persisted in localStorage)
   apiBase: 'https://api.openai.com/v1',
   apiKey: '',
   model: '',
@@ -760,82 +683,141 @@ const state = {
   temperature: 0.7,
 };
 
-// ══════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════
+// STORAGE — localStorage helpers
+// ══════════════════════════════════════════════════════════════════
+const STORAGE_KEYS = {
+  settings:  'lumen_settings',
+  mcpTools:  'lumen_mcp_tools',
+  models:    'lumen_models',
+  lastConv:  'lumen_last_conv',
+};
+
+const storage = {
+  get(key) {
+    try { return JSON.parse(localStorage.getItem(key)); } catch { return null; }
+  },
+  set(key, value) {
+    try { localStorage.setItem(key, JSON.stringify(value)); } catch {}
+  },
+};
+
+// ══════════════════════════════════════════════════════════════════
+// API — fetch wrappers
+// ══════════════════════════════════════════════════════════════════
+const api = {
+  async get(url) {
+    const res = await fetch(url);
+    return res.json();
+  },
+  async post(url, body) {
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    return res.json();
+  },
+  async put(url, body) {
+    const res = await fetch(url, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    return res.json();
+  },
+  async delete(url) {
+    const res = await fetch(url, { method: 'DELETE' });
+    return res.json();
+  },
+  /** Returns a ReadableStream for SSE responses. */
+  stream(url, body) {
+    return fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+  },
+};
+
+// ══════════════════════════════════════════════════════════════════
 // MARKDOWN + LATEX RENDERER
-// ══════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════
 marked.setOptions({ breaks: true, gfm: true });
 
+const DOMPURIFY_CONFIG = {
+  ADD_TAGS: ['math','semantics','mrow','mi','mo','mn','mfrac','msup','msub','mspace','mtext','annotation','svg','path','use','defs','g'],
+  ADD_ATTR: ['class','style','xmlns','viewBox','d','fill','stroke','href','xlink:href','width','height','aria-hidden'],
+};
+
 function renderMarkdown(text) {
-  // Pre-process: protect LaTeX blocks from markdown
+  // Protect LaTeX from being mangled by the Markdown parser.
   const latexBlocks = [];
-  let idx = 0;
+  const placeholder = (block) => {
+    latexBlocks.push(block);
+    return `__LATEX_${latexBlocks.length - 1}__`;
+  };
+
   const safeText = text
-    .replace(/\$\$[\s\S]+?\$\$/g, m => { latexBlocks.push({type:'block', src:m}); return `__LATEX_BLOCK_${idx++}__`; })
-    .replace(/\$[^\$\n]+?\$/g,    m => { latexBlocks.push({type:'inline', src:m}); return `__LATEX_BLOCK_${idx++}__`; });
+    .replace(/\$\$[\s\S]+?\$\$/g, m => placeholder({ type: 'block',  src: m }))
+    .replace(/\$[^\$\n]+?\$/g,    m => placeholder({ type: 'inline', src: m }));
 
   let html = marked.parse(safeText);
 
-  // Restore LaTeX
-  latexBlocks.forEach((lb, i) => {
-    const math = lb.src.replace(/^\$+|\$+$/g, '').trim();
+  latexBlocks.forEach(({ type, src }, i) => {
+    const math = src.replace(/^\$+|\$+$/g, '').trim();
     try {
-      const rendered = katex.renderToString(math, { displayMode: lb.type === 'block', throwOnError: false });
-      html = html.replace(`__LATEX_BLOCK_${i}__`, rendered);
-    } catch(e) {
-      html = html.replace(`__LATEX_BLOCK_${i}__`, lb.src);
+      const rendered = katex.renderToString(math, { displayMode: type === 'block', throwOnError: false });
+      html = html.replace(`__LATEX_${i}__`, rendered);
+    } catch {
+      html = html.replace(`__LATEX_${i}__`, src);
     }
   });
 
-  html = DOMPurify.sanitize(html, {
-    ADD_TAGS: ['math', 'semantics', 'mrow', 'mi', 'mo', 'mn', 'mfrac', 'msup', 'msub','mspace','mtext','annotation','svg','path','use','defs','g'],
-    ADD_ATTR: ['class','style','xmlns','viewBox','d','fill','stroke','href','xlink:href','width','height','aria-hidden'],
-  });
-
-  return html;
+  return DOMPurify.sanitize(html, DOMPURIFY_CONFIG);
 }
 
 function applyMarkdown(el, text) {
   el.innerHTML = renderMarkdown(text);
   el.querySelectorAll('pre code').forEach(block => {
     hljs.highlightElement(block);
-    // Add copy button
-    const pre = block.parentElement;
-    const btn = document.createElement('button');
-    btn.className = 'code-copy'; btn.textContent = 'copy';
-    btn.onclick = () => { navigator.clipboard.writeText(block.innerText); btn.textContent = 'copied!'; setTimeout(()=>btn.textContent='copy',1500); };
-    pre.appendChild(btn);
+    const copyBtn = document.createElement('button');
+    copyBtn.className = 'code-copy';
+    copyBtn.textContent = 'copy';
+    copyBtn.onclick = () => {
+      navigator.clipboard.writeText(block.innerText);
+      copyBtn.textContent = 'copied!';
+      setTimeout(() => { copyBtn.textContent = 'copy'; }, 1500);
+    };
+    block.parentElement.appendChild(copyBtn);
   });
 }
 
-// ══════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════
 // SETTINGS (localStorage)
-// ══════════════════════════════════════════════════════════
-const SETTINGS_KEY = 'lumen_settings';
+// ══════════════════════════════════════════════════════════════════
+const SETTINGS_DEFAULTS = {
+  apiBase:      'https://api.openai.com/v1',
+  apiKey:       '',
+  model:        '',
+  systemPrompt: '',
+  maxTokens:    4096,
+  temperature:  0.7,
+};
+
 function loadSettings() {
-  try {
-    const s = JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}');
-    Object.assign(state, {
-      apiBase:      s.apiBase      || 'https://api.openai.com/v1',
-      apiKey:       s.apiKey       || '',
-      model:        s.model        || '',
-      systemPrompt: s.systemPrompt || '',
-      maxTokens:    s.maxTokens    || 4096,
-      temperature:  s.temperature  || 0.7,
-    });
-  } catch(e) {}
-  try {
-    const saved = localStorage.getItem('lumen_mcp_tools');
-    if (saved) state.mcpTools = JSON.parse(saved);
-  } catch(e) {}
-  try {
-    const savedModels = localStorage.getItem('lumen_models');
-    if (savedModels) renderModelList(JSON.parse(savedModels));
-  } catch(e) {}
-  // Populate UI
+  const saved = storage.get(STORAGE_KEYS.settings) || {};
+  Object.assign(state, { ...SETTINGS_DEFAULTS, ...saved });
+
+  const cachedTools  = storage.get(STORAGE_KEYS.mcpTools);
+  const cachedModels = storage.get(STORAGE_KEYS.models);
+  if (cachedTools)  state.mcpTools = cachedTools;
+  if (cachedModels) renderModelList(cachedModels);
+
+  // Populate UI fields
   document.getElementById('api-base').value      = state.apiBase;
   document.getElementById('api-key').value       = state.apiKey;
   document.getElementById('system-prompt').value = state.systemPrompt;
-
   updateModelBadge();
 }
 
@@ -844,10 +826,14 @@ function saveSettings() {
   state.apiKey       = document.getElementById('api-key').value.trim();
   state.systemPrompt = document.getElementById('system-prompt').value.trim();
 
-  localStorage.setItem(SETTINGS_KEY, JSON.stringify({
-    apiBase: state.apiBase, apiKey: state.apiKey, model: state.model,
-    systemPrompt: state.systemPrompt, maxTokens: state.maxTokens, temperature: state.temperature,
-  }));
+  storage.set(STORAGE_KEYS.settings, {
+    apiBase:      state.apiBase,
+    apiKey:       state.apiKey,
+    model:        state.model,
+    systemPrompt: state.systemPrompt,
+    maxTokens:    state.maxTokens,
+    temperature:  state.temperature,
+  });
   showStatus('settings-status', 'Settings saved ✓', 'ok');
   updateModelBadge();
 }
@@ -856,52 +842,52 @@ function updateModelBadge() {
   document.getElementById('model-badge').textContent = state.model || 'No model selected';
 }
 
-// ══════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════
 // CONVERSATIONS
-// ══════════════════════════════════════════════════════════
-async function fetchConversations() {
-  const r = await fetch('/api/conversations');
-  return r.json();
+// ══════════════════════════════════════════════════════════════════
+async function loadConversationList() {
+  const list = await api.get('/api/conversations');
+  const container = document.getElementById('conv-list');
+  container.innerHTML = '';
+  list.forEach(conv => container.appendChild(buildConvItem(conv)));
 }
 
-async function loadConversationList() {
-  const list = await fetchConversations();
-  const el = document.getElementById('conv-list');
-  el.innerHTML = '';
-  list.forEach(c => {
-    const item = document.createElement('div');
-    item.className = 'conv-item' + (c.id === state.convId ? ' active' : '');
-    item.dataset.id = c.id;
-    item.innerHTML = `
-      <div class="conv-item-icon">💬</div>
-      <div class="conv-item-info">
-        <div class="conv-item-title">${escapeHtml(c.title)}</div>
-        <div class="conv-item-meta">${c.message_count} msgs</div>
-      </div>
-      <button class="conv-del" title="Delete" data-id="${c.id}">✕</button>
-    `;
-    item.addEventListener('click', e => {
-      if(e.target.classList.contains('conv-del')) return;
-      openConversation(c.id);
-    });
-    item.querySelector('.conv-del').addEventListener('click', async e => {
-      e.stopPropagation();
-      if(!confirm('Delete this conversation?')) return;
-      await fetch(`/api/conversations/${c.id}`, {method:'DELETE'});
-      if(state.convId === c.id) { state.convId=null; state.messages=[]; clearMessages(); }
-      loadConversationList();
-    });
-    el.appendChild(item);
+function buildConvItem(conv) {
+  const item = document.createElement('div');
+  item.className = 'conv-item' + (conv.id === state.convId ? ' active' : '');
+  item.dataset.id = conv.id;
+  item.innerHTML = `
+    <div class="conv-item-icon">💬</div>
+    <div class="conv-item-info">
+      <div class="conv-item-title">${escapeHtml(conv.title)}</div>
+      <div class="conv-item-meta">${conv.message_count} msgs</div>
+    </div>
+    <button class="conv-del" title="Delete" data-id="${conv.id}">✕</button>
+  `;
+  item.addEventListener('click', e => {
+    if (e.target.classList.contains('conv-del')) return;
+    openConversation(conv.id);
   });
+  item.querySelector('.conv-del').addEventListener('click', async e => {
+    e.stopPropagation();
+    if (!confirm('Delete this conversation?')) return;
+    await api.delete(`/api/conversations/${conv.id}`);
+    if (state.convId === conv.id) {
+      state.convId = null;
+      state.messages = [];
+      clearMessages();
+    }
+    loadConversationList();
+  });
+  return item;
 }
 
 async function openConversation(id) {
-  const r = await fetch(`/api/conversations/${id}`);
-  const data = await r.json();
-  state.convId = id;
-  localStorage.setItem('lumen_last_conv', id);
-  state.messages = data.messages || [];
+  const data = await api.get(`/api/conversations/${id}`);
+  state.convId    = id;
+  state.messages  = data.messages  || [];
   state.displayLog = data.displayLog || [];
+  storage.set(STORAGE_KEYS.lastConv, id);
   document.getElementById('chat-title-input').value = data.title || '';
   renderAllMessages();
   loadConversationList();
@@ -909,15 +895,11 @@ async function openConversation(id) {
 }
 
 async function createNewConversation() {
-  const r = await fetch('/api/conversations', {
-    method:'POST', headers:{'Content-Type':'application/json'},
-    body: JSON.stringify({title:'New Conversation'})
-  });
-  const data = await r.json();
-  state.convId = data.id;
-  localStorage.setItem('lumen_last_conv', data.id);
-  state.messages = [];
+  const data = await api.post('/api/conversations', { title: 'New Conversation' });
+  state.convId    = data.id;
+  state.messages  = [];
   state.displayLog = [];
+  storage.set(STORAGE_KEYS.lastConv, data.id);
   document.getElementById('chat-title-input').value = 'New Conversation';
   clearMessages();
   loadConversationList();
@@ -925,104 +907,111 @@ async function createNewConversation() {
 }
 
 async function persistConversation() {
-  if(!state.convId) return;
+  if (!state.convId) return;
   const title = document.getElementById('chat-title-input').value.trim() || 'Untitled';
-  await fetch(`/api/conversations/${state.convId}`, {
-    method:'PUT', headers:{'Content-Type':'application/json'},
-    body: JSON.stringify({title, messages: state.messages, displayLog: state.displayLog})
+  await api.put(`/api/conversations/${state.convId}`, {
+    title,
+    messages:   state.messages,
+    displayLog: state.displayLog,
   });
   loadConversationList();
 }
 
-// ══════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════
 // MESSAGE RENDERING
-// ══════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════
 function clearMessages() {
-  const el = document.getElementById('messages');
-  el.innerHTML = '<div id="empty-state"><div class="es-icon">✦</div><div class="es-title">Start a conversation</div><div class="es-sub">Type a message below.</div></div>';
+  document.getElementById('messages').innerHTML = `
+    <div id="empty-state">
+      <div class="es-icon">✦</div>
+      <div class="es-title">Start a conversation</div>
+      <div class="es-sub">Type a message below.</div>
+    </div>`;
 }
 
 function removeEmptyState() {
-  const es = document.getElementById('empty-state');
-  if(es) es.remove();
+  document.getElementById('empty-state')?.remove();
 }
 
 function renderAllMessages() {
-  const el = document.getElementById('messages');
-  el.innerHTML = '';
-  if (state.displayLog.length > 0) {
-    state.displayLog.forEach(entry => {
-      if (entry.type === 'message') {
-        appendMessage(entry.role, entry.content);
-      } else if (entry.type === 'tool_result') {
-        appendToolResult(entry.name, entry.result);
-      }
-    });
-  }
+  document.getElementById('messages').innerHTML = '';
+  state.displayLog.forEach(entry => {
+    if (entry.type === 'message') {
+      appendMessage(entry.role, entry.content);
+    } else if (entry.type === 'tool_result') {
+      appendToolResult(entry.name, entry.result);
+    }
+  });
   scrollToBottom();
+}
+
+/**
+ * Shared helper — builds the outer row + avatar + body shell used by all
+ * message types (user, assistant, tool request, tool result).
+ * Returns { row, body } so callers can append their own content into body.
+ */
+function createMessageRow(avatarClass, avatarIcon, roleLabel) {
+  removeEmptyState();
+  const row = document.createElement('div');
+  row.className = 'msg-row';
+
+  const avatar = document.createElement('div');
+  avatar.className = `msg-avatar ${avatarClass}`;
+  avatar.textContent = avatarIcon;
+
+  const body = document.createElement('div');
+  body.className = 'msg-body';
+  body.innerHTML = `<div class="msg-role">${roleLabel}</div>`;
+
+  row.appendChild(avatar);
+  row.appendChild(body);
+  document.getElementById('messages').appendChild(row);
+  scrollToBottom();
+  return { row, body };
 }
 
 function appendMessage(role, content) {
   if (!content) return;
-  removeEmptyState();
-  const row = document.createElement('div');
-  row.className = 'msg-row';
+  const isUser = role === 'user';
+  const { body } = createMessageRow(
+    isUser ? 'user-av' : 'ai-av',
+    isUser ? '✦' : '◈',
+    isUser ? 'You' : 'Assistant',
+  );
 
-  const avatar = document.createElement('div');
-  avatar.className = `msg-avatar ${role === 'user' ? 'user-av' : 'ai-av'}`;
-  avatar.textContent = role === 'user' ? '✦' : '◈';
+  const contentEl = document.createElement('div');
+  contentEl.className = 'msg-content';
 
-  const body = document.createElement('div');
-  body.className = 'msg-body';
-  body.innerHTML = `<div class="msg-role">${role === 'user' ? 'You' : 'Assistant'}</div>`;
-
-  const content_el = document.createElement('div');
-  content_el.className = 'msg-content';
-
-  if(typeof content === 'string') {
-    applyMarkdown(content_el, content);
-  } else if(Array.isArray(content)) {
-    // multi-part
+  if (typeof content === 'string') {
+    applyMarkdown(contentEl, content);
+  } else if (Array.isArray(content)) {
     content.forEach(part => {
-      if(part.type === 'text') {
-        const t = document.createElement('div');
-        applyMarkdown(t, part.text);
-        content_el.appendChild(t);
+      if (part.type === 'text') {
+        const chunk = document.createElement('div');
+        applyMarkdown(chunk, part.text);
+        contentEl.appendChild(chunk);
       }
     });
   }
-
-  body.appendChild(content_el);
-  row.appendChild(avatar);
-  row.appendChild(body);
-  document.getElementById('messages').appendChild(row);
-  scrollToBottom();
-  return content_el;
+  body.appendChild(contentEl);
+  return contentEl;
 }
 
 function createStreamingMessage() {
-  removeEmptyState();
-  const row = document.createElement('div');
-  row.className = 'msg-row';
+  const { body } = createMessageRow('ai-av', '◈', 'Assistant');
+  const contentEl = document.createElement('div');
+  contentEl.className = 'msg-content cursor-blink';
+  contentEl.innerHTML = '&nbsp;';
+  body.appendChild(contentEl);
+  return contentEl;
+}
 
-  const avatar = document.createElement('div');
-  avatar.className = 'msg-avatar ai-av';
-  avatar.textContent = '◈';
-
-  const body = document.createElement('div');
-  body.className = 'msg-body';
-  body.innerHTML = '<div class="msg-role">Assistant</div>';
-
-  const content_el = document.createElement('div');
-  content_el.className = 'msg-content cursor-blink';
-  content_el.innerHTML = '&nbsp;';
-
-  body.appendChild(content_el);
-  row.appendChild(avatar);
-  row.appendChild(body);
-  document.getElementById('messages').appendChild(row);
-  scrollToBottom();
-  return content_el;
+function appendToolResult(toolName, result) {
+  const { body } = createMessageRow('ai-av', '⚙', 'Tool Result');
+  const box = document.createElement('div');
+  box.className = 'tool-result-box';
+  box.innerHTML = `<div class="tr-label">${escapeHtml(toolName)}</div><div>${escapeHtml(String(result))}</div>`;
+  body.appendChild(box);
 }
 
 function scrollToBottom() {
@@ -1030,133 +1019,91 @@ function scrollToBottom() {
   el.scrollTop = el.scrollHeight;
 }
 
-// ══════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════
 // TOOL CONFIRMATION UI
-// ══════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════
 function showToolConfirmation(calls) {
   return new Promise(resolve => {
-    const row = document.createElement('div');
-    row.className = 'msg-row';
+    const { row, body } = createMessageRow('ai-av', '⚙', 'Tool Request');
+    const decisions = new Array(calls.length).fill(null);
 
-    const avatar = document.createElement('div');
-    avatar.className = 'msg-avatar ai-av';
-    avatar.textContent = '⚙';
-
-    const body = document.createElement('div');
-    body.className = 'msg-body';
-    body.innerHTML = '<div class="msg-role">Tool Request</div>';
+    const checkAllDecided = () => {
+      if (!decisions.every(d => d !== null)) return;
+      row.style.transition = 'opacity .2s ease';
+      row.style.opacity = '0';
+      setTimeout(() => row.remove(), 200);
+      resolve(decisions);
+    };
 
     calls.forEach((call, i) => {
       let args = {};
-      try { args = JSON.parse(call.function.arguments || '{}'); } catch(e) {}
+      try { args = JSON.parse(call.function.arguments || '{}'); } catch {}
+
       const box = document.createElement('div');
       box.className = 'tool-confirm-box';
       box.innerHTML = `
-        <div class="tc-header">
-          <span>⚠</span>
-          <span>Tool call requires your approval</span>
-        </div>
-        <div style="margin-bottom:8px;font-family:'DM Mono',monospace;font-size:.78rem;">
-          <span style="color:var(--text2);">Tool: </span>
-          <span class="tc-name">${escapeHtml(call.function.name)}</span>
-        </div>
-        <div style="margin-bottom:6px;font-family:'DM Mono',monospace;font-size:.72rem;color:var(--text3);">Arguments:</div>
+        <div class="tool-confirm-header"><span>⚠</span><span>Tool call requires your approval</span></div>
+        <div class="tool-confirm-name-row">Tool: <span class="tc-name">${escapeHtml(call.function.name)}</span></div>
+        <div class="tool-confirm-args-label">Arguments:</div>
         <div class="tc-args">${escapeHtml(JSON.stringify(args, null, 2))}</div>
         <div class="tc-buttons">
           <button class="tc-btn approve" data-idx="${i}">✓ Allow</button>
-          <button class="tc-btn deny"   data-idx="${i}">✕ Deny</button>
+          <button class="tc-btn deny"    data-idx="${i}">✕ Deny</button>
         </div>
       `;
+
+      box.querySelector('.tc-btn.approve').addEventListener('click', () => {
+        decisions[i] = true;
+        box.querySelector('.tc-buttons').innerHTML = '<span class="tc-decision-approved">✓ Approved</span>';
+        checkAllDecided();
+      });
+      box.querySelector('.tc-btn.deny').addEventListener('click', () => {
+        decisions[i] = false;
+        box.querySelector('.tc-buttons').innerHTML = '<span class="tc-decision-denied">✕ Denied</span>';
+        checkAllDecided();
+      });
+
       body.appendChild(box);
-    });
-
-    row.appendChild(avatar);
-    row.appendChild(body);
-    document.getElementById('messages').appendChild(row);
-    scrollToBottom();
-
-    // Resolve when ALL calls have been approved or denied
-    const decisions = new Array(calls.length).fill(null);
-    const checkDone = () => {
-      if(decisions.every(d => d !== null)) {
-        row.style.transition = 'opacity .2s ease';
-        row.style.opacity = '0';
-        setTimeout(() => row.remove(), 200);
-        resolve(decisions);
-      }
-    };
-
-    row.querySelectorAll('.tc-btn.approve').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const idx = parseInt(btn.dataset.idx);
-        decisions[idx] = true;
-        btn.closest('.tc-buttons').innerHTML = '<span style="color:var(--accent2);font-family:\'DM Mono\',monospace;font-size:.76rem;">✓ Approved</span>';
-        checkDone();
-      });
-    });
-    row.querySelectorAll('.tc-btn.deny').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const idx = parseInt(btn.dataset.idx);
-        decisions[idx] = false;
-        btn.closest('.tc-buttons').innerHTML = '<span style="color:var(--danger);font-family:\'DM Mono\',monospace;font-size:.76rem;">✕ Denied</span>';
-        checkDone();
-      });
     });
   });
 }
 
-function appendToolResult(toolName, result) {
-  const row = document.createElement('div');
-  row.className = 'msg-row';
-
-  const avatar = document.createElement('div');
-  avatar.className = 'msg-avatar ai-av';
-  avatar.textContent = '⚙';
-
-  const body = document.createElement('div');
-  body.className = 'msg-body';
-  body.innerHTML = '<div class="msg-role">Tool Result</div>';
-
-  const box = document.createElement('div');
-  box.className = 'tool-result-box';
-  box.innerHTML = `<div class="tr-label">${escapeHtml(toolName)}</div><div>${escapeHtml(String(result))}</div>`;
-  body.appendChild(box);
-  row.appendChild(avatar);
-  row.appendChild(body);
-  document.getElementById('messages').appendChild(row);
-  scrollToBottom();
-}
-
-// ══════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════
 // CHAT — SEND
-// ══════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════
 function buildToolsPayload() {
-  return state.mcpTools.map(t => ({
+  return state.mcpTools.map(tool => ({
     type: 'function',
     function: {
-      name: t.name,
-      description: t.description,
-      parameters: t.inputSchema || { type: 'object', properties: {} },
-    }
+      name: tool.name,
+      description: tool.description,
+      parameters: tool.inputSchema || { type: 'object', properties: {} },
+    },
   }));
 }
 
+function buildApiMessages() {
+  const messages = [];
+  if (state.systemPrompt) messages.push({ role: 'system', content: state.systemPrompt });
+  messages.push(...state.messages);
+  return messages;
+}
+
 async function sendMessage(userText) {
-  if(!userText.trim() || state.isStreaming) return;
-  if(!state.convId) await createNewConversation();
+  if (!userText.trim() || state.isStreaming) return;
+  if (!state.convId) await createNewConversation();
 
   state.isStreaming = true;
   document.getElementById('send-btn').disabled = true;
 
-  // Auto-title
-  if(state.messages.length === 0) {
-    const autoTitle = userText.slice(0, 40) + (userText.length > 40 ? '…' : '');
-    document.getElementById('chat-title-input').value = autoTitle;
+  // Auto-title on first message
+  if (state.messages.length === 0) {
+    document.getElementById('chat-title-input').value =
+      userText.slice(0, 40) + (userText.length > 40 ? '…' : '');
   }
 
-  // Add user message
-  state.messages.push({role:'user', content: userText});
-  state.displayLog.push({type:'message', role:'user', content: userText});
+  state.messages.push({ role: 'user', content: userText });
+  state.displayLog.push({ type: 'message', role: 'user', content: userText });
   appendMessage('user', userText);
 
   await runChatLoop();
@@ -1167,220 +1114,195 @@ async function sendMessage(userText) {
 }
 
 async function runChatLoop() {
-  const tools = buildToolsPayload();
-
-  // Build API messages
-  const apiMessages = [];
-  if(state.systemPrompt) apiMessages.push({role:'system', content: state.systemPrompt});
-  apiMessages.push(...state.messages);
-
-  // Start streaming response
+  const tools     = buildToolsPayload();
   const contentEl = createStreamingMessage();
-  let accText = '';
+  let accText     = '';
+  let toolCalls   = null;
 
   try {
-    const resp = await fetch('/api/chat/stream', {
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({
-        api_base: state.apiBase,
-        api_key: state.apiKey,
-        model: state.model || 'gpt-4o',
-        messages: apiMessages,
-        tools: tools.length > 0 ? tools : undefined,
-      })
+    const resp = await api.stream('/api/chat/stream', {
+      api_base: state.apiBase,
+      api_key:  state.apiKey,
+      model:    state.model || 'gpt-4o',
+      messages: buildApiMessages(),
+      tools:    tools.length > 0 ? tools : undefined,
     });
 
-    const reader = resp.body.getReader();
+    const reader  = resp.body.getReader();
     const decoder = new TextDecoder();
-    let buffer = '';
-    let toolCalls = null;
+    let buffer    = '';
 
-    while(true) {
-      const {done, value} = await reader.read();
-      if(done) break;
-      buffer += decoder.decode(value, {stream: true});
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      buffer += decoder.decode(value, { stream: true });
       const lines = buffer.split('\n');
-      buffer = lines.pop();
+      buffer = lines.pop(); // keep incomplete last line
 
-      for(const line of lines) {
-        if(!line.startsWith('data: ')) continue;
-        const data = line.slice(6).trim();
-        if(data === '[DONE]') break;
+      for (const line of lines) {
+        if (!line.startsWith('data: ')) continue;
+        const raw = line.slice(6).trim();
+        if (raw === '[DONE]') break;
+
         try {
-          const evt = JSON.parse(data);
-          if(evt.type === 'text') {
+          const evt = JSON.parse(raw);
+          if (evt.type === 'text') {
             accText += evt.content;
             contentEl.classList.add('cursor-blink');
             applyMarkdown(contentEl, accText);
             scrollToBottom();
-          } else if(evt.type === 'tool_calls') {
+          } else if (evt.type === 'tool_calls') {
             toolCalls = evt.calls;
-          } else if(evt.type === 'error') {
+          } else if (evt.type === 'error') {
             contentEl.classList.remove('cursor-blink');
             contentEl.innerHTML = `<span style="color:var(--danger)">Error: ${escapeHtml(evt.message)}</span>`;
             return;
           }
-        } catch(e) {}
+        } catch {}
       }
     }
 
     contentEl.classList.remove('cursor-blink');
 
-    // ── Handle tool calls ────────────────────────────────
-    if(toolCalls && toolCalls.length > 0) {
-      // Save any preceding text to displayLog
-      if(accText) state.displayLog.push({type:'message', role:'assistant', content: accText});
-      // Push assistant message with tool_calls
-      state.messages.push({
-        role:'assistant',
-        content: accText || null,
-        tool_calls: toolCalls.map(tc => ({
-          id: tc.id,
-          type: 'function',
-          function: { name: tc.function.name, arguments: tc.function.arguments }
-        }))
-      });
-
-      // Show confirmation UI
-      const decisions = await showToolConfirmation(toolCalls);
-
-      // Execute approved tools
-      for(let i=0; i<toolCalls.length; i++) {
-        const tc = toolCalls[i];
-        let result = '';
-        if(decisions[i]) {
-          // Find server for this tool
-          const toolDef = state.mcpTools.find(t => t.name === tc.function.name);
-          let args = {};
-          try { args = JSON.parse(tc.function.arguments || '{}'); } catch(e) {}
-
-          if(toolDef) {
-            try {
-              const r = await fetch('/api/mcp/call', {
-                method:'POST', headers:{'Content-Type':'application/json'},
-                body: JSON.stringify({server: toolDef.server, tool: tc.function.name, arguments: args})
-              });
-              const rd = await r.json();
-              result = rd.result || rd.error || '';
-            } catch(e) { result = `Error: ${e.message}`; }
-          } else {
-            result = 'Tool not found in any MCP server.';
-          }
-          appendToolResult(tc.function.name, result);
-          state.displayLog.push({type:'tool_result', name: tc.function.name, result});
-        } else {
-          result = 'Tool execution denied by user.';
-          appendToolResult(tc.function.name, result);
-          state.displayLog.push({type:'tool_result', name: tc.function.name, result});
-        }
-
-        // Push tool result message
-        state.messages.push({
-          role:'tool',
-          tool_call_id: tc.id,
-          content: result,
-        });
-      }
-
-      // Continue the loop (model may need to respond after tool results)
-      await runChatLoop();
-    } else {
-      // Normal text response
-      if(accText) {
-        state.messages.push({role:'assistant', content: accText});
-        state.displayLog.push({type:'message', role:'assistant', content: accText});
-      }
+    if (toolCalls?.length > 0) {
+      await handleToolCalls(toolCalls, accText);
+    } else if (accText) {
+      state.messages.push({ role: 'assistant', content: accText });
+      state.displayLog.push({ type: 'message', role: 'assistant', content: accText });
     }
 
-  } catch(e) {
+  } catch (err) {
     contentEl.classList.remove('cursor-blink');
-    contentEl.innerHTML = `<span style="color:var(--danger)">Network error: ${escapeHtml(e.message)}</span>`;
+    contentEl.innerHTML = `<span style="color:var(--danger)">Network error: ${escapeHtml(err.message)}</span>`;
   }
 }
 
-// ══════════════════════════════════════════════════════════
+async function handleToolCalls(toolCalls, precedingText) {
+  if (precedingText) {
+    state.displayLog.push({ type: 'message', role: 'assistant', content: precedingText });
+  }
+
+  state.messages.push({
+    role: 'assistant',
+    content: precedingText || null,
+    tool_calls: toolCalls.map(tc => ({
+      id: tc.id,
+      type: 'function',
+      function: { name: tc.function.name, arguments: tc.function.arguments },
+    })),
+  });
+
+  const decisions = await showToolConfirmation(toolCalls);
+
+  for (let i = 0; i < toolCalls.length; i++) {
+    const tc     = toolCalls[i];
+    const result = decisions[i]
+      ? await executeTool(tc)
+      : 'Tool execution denied by user.';
+
+    appendToolResult(tc.function.name, result);
+    state.displayLog.push({ type: 'tool_result', name: tc.function.name, result });
+    state.messages.push({ role: 'tool', tool_call_id: tc.id, content: result });
+  }
+
+  // Let the model respond to tool results
+  await runChatLoop();
+}
+
+async function executeTool(tc) {
+  const toolDef = state.mcpTools.find(t => t.name === tc.function.name);
+  if (!toolDef) return 'Tool not found in any MCP server.';
+
+  let args = {};
+  try { args = JSON.parse(tc.function.arguments || '{}'); } catch {}
+
+  try {
+    const data = await api.post('/api/mcp/call', {
+      server: toolDef.server,
+      tool: tc.function.name,
+      arguments: args,
+    });
+    return data.result || data.error || '';
+  } catch (err) {
+    return `Error: ${err.message}`;
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════
 // MCP
-// ══════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════
 async function loadMcpConfig() {
-  const r = await fetch('/api/mcp/config');
-  const cfg = await r.json();
+  const cfg = await api.get('/api/mcp/config');
   document.getElementById('mcp-config-editor').value = JSON.stringify(cfg, null, 2);
 }
 
 async function saveMcpConfig() {
   try {
     const cfg = JSON.parse(document.getElementById('mcp-config-editor').value);
-    await fetch('/api/mcp/config', {
-      method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify(cfg)
-    });
+    await api.post('/api/mcp/config', cfg);
     showStatus('mcp-status', 'Config saved ✓', 'ok');
-  } catch(e) {
-    showStatus('mcp-status', 'Invalid JSON: ' + e.message, 'err');
+  } catch (err) {
+    showStatus('mcp-status', 'Invalid JSON: ' + err.message, 'err');
   }
 }
 
 async function reloadTools() {
   showStatus('mcp-status', 'Loading tools…', 'ok');
   try {
-    const r = await fetch('/api/mcp/tools');
-    state.mcpTools = await r.json();
-    localStorage.setItem('lumen_mcp_tools', JSON.stringify(state.mcpTools));
+    state.mcpTools = await api.get('/api/mcp/tools');
+    storage.set(STORAGE_KEYS.mcpTools, state.mcpTools);
     renderToolList();
     showStatus('mcp-status', `${state.mcpTools.length} tool(s) loaded ✓`, 'ok');
-  } catch(e) {
-    showStatus('mcp-status', 'Error loading tools: ' + e.message, 'err');
+  } catch (err) {
+    showStatus('mcp-status', 'Error loading tools: ' + err.message, 'err');
   }
 }
 
 function renderToolList() {
-  const el = document.getElementById('tool-list');
-  if(state.mcpTools.length === 0) {
-    el.innerHTML = '<div style="font-family:\'DM Mono\',monospace;font-size:.78rem;color:var(--text3);">No tools available</div>';
+  const container = document.getElementById('tool-list');
+  if (state.mcpTools.length === 0) {
+    container.innerHTML = '<div class="no-tools-label">No tools available</div>';
     return;
   }
-  el.innerHTML = state.mcpTools.map(t => `
+  container.innerHTML = state.mcpTools.map(tool => `
     <div class="tool-card">
       <div class="tool-card-header">
-        <span class="tool-card-name">${escapeHtml(t.name)}</span>
-        <span class="tool-card-server">${escapeHtml(t.server)}</span>
+        <span class="tool-card-name">${escapeHtml(tool.name)}</span>
+        <span class="tool-card-server">${escapeHtml(tool.server)}</span>
       </div>
-      <div class="tool-card-desc">${escapeHtml(t.description)}</div>
+      <div class="tool-card-desc">${escapeHtml(tool.description)}</div>
     </div>
   `).join('');
 }
 
-// ══════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════
 // MODEL FETCH
-// ══════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════
 async function fetchModels() {
   const apiBase = document.getElementById('api-base').value.trim();
   const apiKey  = document.getElementById('api-key').value.trim();
   try {
-    const r = await fetch('/api/models', {
-      method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({api_base: apiBase, api_key: apiKey})
-    });
-    const d = await r.json();
-    if(d.error) { showStatus('settings-status', d.error, 'err'); return; }
-    localStorage.setItem('lumen_models', JSON.stringify(d.models || []));
-    renderModelList(d.models || []);
-    showStatus('settings-status', `${d.models.length} models fetched ✓`, 'ok');
-  } catch(e) {
-    showStatus('settings-status', 'Error: ' + e.message, 'err');
+    const data = await api.post('/api/models', { api_base: apiBase, api_key: apiKey });
+    if (data.error) { showStatus('settings-status', data.error, 'err'); return; }
+    storage.set(STORAGE_KEYS.models, data.models || []);
+    renderModelList(data.models || []);
+    showStatus('settings-status', `${data.models.length} models fetched ✓`, 'ok');
+  } catch (err) {
+    showStatus('settings-status', 'Error: ' + err.message, 'err');
   }
 }
 
 function renderModelList(models) {
-  const el = document.getElementById('model-list');
-  el.innerHTML = models.map(m => `
+  const container = document.getElementById('model-list');
+  container.innerHTML = models.map(m => `
     <div class="model-chip ${m === state.model ? 'selected' : ''}" data-model="${escapeHtml(m)}">${escapeHtml(m)}</div>
   `).join('');
-  el.querySelectorAll('.model-chip').forEach(chip => {
+
+  container.querySelectorAll('.model-chip').forEach(chip => {
     chip.addEventListener('click', () => {
       state.model = chip.dataset.model;
-      el.querySelectorAll('.model-chip').forEach(c => c.classList.remove('selected'));
+      container.querySelectorAll('.model-chip').forEach(c => c.classList.remove('selected'));
       chip.classList.add('selected');
       updateModelBadge();
       saveSettings();
@@ -1388,83 +1310,93 @@ function renderModelList(models) {
   });
 }
 
-// ══════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════
 // UI HELPERS
-// ══════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════
 function switchTab(tab) {
   document.querySelectorAll('.sidebar-tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
-  document.querySelectorAll('.panel').forEach(p => p.classList.toggle('active', p.id === tab + '-panel'));
+  document.querySelectorAll('.panel').forEach(p => p.classList.toggle('active', p.id === `${tab}-panel`));
 }
 
-function showStatus(id, msg, type) {
-  const el = document.getElementById(id);
-  el.textContent = msg;
-  el.className = 'status-msg ' + type;
+function showStatus(elementId, message, type) {
+  const el = document.getElementById(elementId);
+  el.textContent = message;
+  el.className = `status-msg ${type}`;
   el.style.display = 'block';
-  setTimeout(() => el.style.display = 'none', 4000);
+  setTimeout(() => { el.style.display = 'none'; }, 4000);
 }
 
 function escapeHtml(str) {
-  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
 }
 
-function toast(msg) {
+function toast(message) {
   const el = document.createElement('div');
   el.className = 'toast';
-  el.textContent = msg;
+  el.textContent = message;
   document.getElementById('toast-container').appendChild(el);
   setTimeout(() => el.remove(), 3000);
 }
-
-// ══════════════════════════════════════════════════════════
-// EVENT BINDINGS
-// ══════════════════════════════════════════════════════════
-document.getElementById('btn-new-chat').addEventListener('click', createNewConversation);
-
-document.querySelectorAll('.sidebar-tab').forEach(tab => {
-  tab.addEventListener('click', () => switchTab(tab.dataset.tab));
-});
-
-document.getElementById('send-btn').addEventListener('click', () => {
-  const input = document.getElementById('user-input');
-  const text = input.value.trim();
-  if(text) { input.value = ''; autoResize(input); sendMessage(text); }
-});
-
-document.getElementById('user-input').addEventListener('keydown', e => {
-  if(e.key === 'Enter' && !e.shiftKey) {
-    e.preventDefault();
-    const text = e.target.value.trim();
-    if(text) { e.target.value = ''; autoResize(e.target); sendMessage(text); }
-  }
-});
-
-document.getElementById('user-input').addEventListener('input', e => autoResize(e.target));
 
 function autoResize(el) {
   el.style.height = 'auto';
   el.style.height = Math.min(el.scrollHeight, 180) + 'px';
 }
 
-document.getElementById('chat-title-input').addEventListener('change', persistConversation);
+// ══════════════════════════════════════════════════════════════════
+// EVENT BINDINGS
+// ══════════════════════════════════════════════════════════════════
+function bindEvents() {
+  // Sidebar
+  document.getElementById('btn-new-chat').addEventListener('click', createNewConversation);
+  document.querySelectorAll('.sidebar-tab').forEach(tab => {
+    tab.addEventListener('click', () => switchTab(tab.dataset.tab));
+  });
 
-document.getElementById('btn-save-settings').addEventListener('click', saveSettings);
-document.getElementById('btn-fetch-models').addEventListener('click', fetchModels);
+  // Chat input
+  const userInput = document.getElementById('user-input');
+  const sendBtn   = document.getElementById('send-btn');
 
-document.getElementById('btn-save-mcp').addEventListener('click', saveMcpConfig);
-document.getElementById('btn-reload-tools').addEventListener('click', reloadTools);
+  const submitInput = () => {
+    const text = userInput.value.trim();
+    if (text) { userInput.value = ''; autoResize(userInput); sendMessage(text); }
+  };
 
-// ══════════════════════════════════════════════════════════
+  sendBtn.addEventListener('click', submitInput);
+  userInput.addEventListener('input', () => autoResize(userInput));
+  userInput.addEventListener('keydown', e => {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); submitInput(); }
+  });
+
+  // Chat title
+  document.getElementById('chat-title-input').addEventListener('change', persistConversation);
+
+  // Settings
+  document.getElementById('btn-save-settings').addEventListener('click', saveSettings);
+  document.getElementById('btn-fetch-models').addEventListener('click', fetchModels);
+
+  // MCP
+  document.getElementById('btn-save-mcp').addEventListener('click', saveMcpConfig);
+  document.getElementById('btn-reload-tools').addEventListener('click', reloadTools);
+}
+
+// ══════════════════════════════════════════════════════════════════
 // INIT
-// ══════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════
 (async () => {
+  bindEvents();
   loadSettings();
   renderToolList();  // show cached tools immediately
   await loadConversationList();
   await loadMcpConfig();
-  const lastConvId = localStorage.getItem('lumen_last_conv');
+
+  const lastConvId = storage.get(STORAGE_KEYS.lastConv);
   if (lastConvId) {
-    try { await openConversation(lastConvId); } catch(e) {}
+    try { await openConversation(lastConvId); } catch {}
   }
 })();
 </script>
