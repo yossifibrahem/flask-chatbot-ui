@@ -752,10 +752,12 @@ const DOMPURIFY_CONFIG = {
 
 function renderMarkdown(text) {
   // Protect LaTeX from being mangled by the Markdown parser.
+  // Use ASCII control characters (\x02 / \x03) as delimiters — marked will
+  // never treat them as emphasis or any other markdown construct.
   const latexBlocks = [];
   const placeholder = (block) => {
     latexBlocks.push(block);
-    return `__LATEX_${latexBlocks.length - 1}__`;
+    return `\x02LATEX${latexBlocks.length - 1}\x03`;
   };
 
   const safeText = text
@@ -768,9 +770,9 @@ function renderMarkdown(text) {
     const math = src.replace(/^\$+|\$+$/g, '').trim();
     try {
       const rendered = katex.renderToString(math, { displayMode: type === 'block', throwOnError: false });
-      html = html.replace(`__LATEX_${i}__`, rendered);
+      html = html.replace(`\x02LATEX${i}\x03`, rendered);
     } catch {
-      html = html.replace(`__LATEX_${i}__`, src);
+      html = html.replace(`\x02LATEX${i}\x03`, src);
     }
   });
 
