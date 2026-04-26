@@ -679,8 +679,6 @@ const state = {
   apiKey: '',
   model: '',
   systemPrompt: '',
-  maxTokens: 4096,
-  temperature: 0.7,
 };
 
 // ══════════════════════════════════════════════════════════════════
@@ -803,8 +801,6 @@ const SETTINGS_DEFAULTS = {
   apiKey:       '',
   model:        '',
   systemPrompt: '',
-  maxTokens:    4096,
-  temperature:  0.7,
 };
 
 function loadSettings() {
@@ -833,8 +829,6 @@ function saveSettings() {
     apiKey:       state.apiKey,
     model:        state.model,
     systemPrompt: state.systemPrompt,
-    maxTokens:    state.maxTokens,
-    temperature:  state.temperature,
   });
   showStatus('settings-status', 'Settings saved ✓', 'ok');
   updateModelBadge();
