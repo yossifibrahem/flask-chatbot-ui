@@ -1,0 +1,1472 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Lumen · AI Chat</title>
+
+<!-- Fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,400&family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,600;1,9..144,400&display=swap" rel="stylesheet" />
+
+<!-- Libraries -->
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.6/dist/purify.min.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" />
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+
+<style>
+/* ── Reset & Variables ── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:        #0d0e11;
+  --surface:   #13141a;
+  --surface2:  #1a1c24;
+  --surface3:  #22252f;
+  --border:    #2a2d38;
+  --accent:    #7c6af7;
+  --accent2:   #4fd1c5;
+  --danger:    #f87171;
+  --warning:   #fbbf24;
+  --text:      #e8eaf0;
+  --text2:     #9da3b4;
+  --text3:     #5a6070;
+  --code-bg:   #0a0b0f;
+  --radius:    10px;
+  --sidebar-w: 270px;
+}
+
+html, body { height: 100%; overflow: hidden; }
+
+body {
+  font-family: 'Fraunces', Georgia, serif;
+  background: var(--bg);
+  color: var(--text);
+  display: flex;
+}
+
+/* ── Sidebar ── */
+#sidebar {
+  width: var(--sidebar-w);
+  min-width: var(--sidebar-w);
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  transition: width .25s ease;
+  overflow: hidden;
+}
+
+#sidebar-header {
+  padding: 20px 18px 14px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.logo {
+  font-size: 1.25rem;
+  font-weight: 600;
+  letter-spacing: -.5px;
+  color: var(--text);
+}
+.logo span { color: var(--accent); }
+
+#btn-new-chat {
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 6px 12px;
+  font-family: 'DM Mono', monospace;
+  font-size: .72rem;
+  cursor: pointer;
+  letter-spacing: .5px;
+  transition: opacity .15s;
+}
+#btn-new-chat:hover { opacity: .85; }
+
+#conv-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 10px 8px;
+}
+#conv-list::-webkit-scrollbar { width: 4px; }
+#conv-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+.conv-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 10px;
+  border-radius: 7px;
+  cursor: pointer;
+  transition: background .15s;
+  margin-bottom: 2px;
+}
+.conv-item:hover { background: var(--surface2); }
+.conv-item.active { background: var(--surface3); }
+
+.conv-item-icon {
+  width: 28px; height: 28px;
+  border-radius: 6px;
+  background: var(--surface3);
+  display: grid; place-items: center;
+  font-size: .9rem;
+  flex-shrink: 0;
+}
+.conv-item-info { flex: 1; min-width: 0; }
+.conv-item-title {
+  font-size: .82rem;
+  font-family: 'DM Mono', monospace;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.conv-item-meta { font-size: .68rem; color: var(--text3); margin-top: 1px; }
+.conv-del {
+  background: none; border: none; color: var(--text3);
+  cursor: pointer; font-size: .8rem; opacity: 0;
+  transition: opacity .15s, color .15s;
+  flex-shrink: 0;
+}
+.conv-item:hover .conv-del { opacity: 1; }
+.conv-del:hover { color: var(--danger); }
+
+/* Sidebar footer tabs */
+#sidebar-footer {
+  border-top: 1px solid var(--border);
+  padding: 10px 8px;
+  display: flex;
+  gap: 6px;
+}
+.sidebar-tab {
+  flex: 1;
+  padding: 7px 4px;
+  border-radius: 6px;
+  background: none;
+  border: 1px solid var(--border);
+  color: var(--text2);
+  font-family: 'DM Mono', monospace;
+  font-size: .7rem;
+  cursor: pointer;
+  transition: all .15s;
+  letter-spacing: .3px;
+}
+.sidebar-tab:hover { background: var(--surface2); color: var(--text); }
+.sidebar-tab.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+/* ── Main ── */
+#main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+  position: relative;
+}
+
+/* ── Panels ── */
+.panel { display: none; flex: 1; overflow: hidden; flex-direction: column; }
+.panel.active { display: flex; }
+
+/* ── Chat Panel ── */
+#chat-header {
+  padding: 16px 24px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--surface);
+}
+#chat-title-input {
+  background: none;
+  border: none;
+  color: var(--text);
+  font-family: 'Fraunces', serif;
+  font-size: 1rem;
+  font-weight: 600;
+  outline: none;
+  width: 300px;
+}
+#chat-title-input::placeholder { color: var(--text3); }
+
+#model-badge {
+  font-family: 'DM Mono', monospace;
+  font-size: .72rem;
+  background: var(--surface3);
+  border: 1px solid var(--border);
+  color: var(--text2);
+  padding: 4px 10px;
+  border-radius: 20px;
+}
+
+#messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 28px 0;
+  scroll-behavior: smooth;
+}
+#messages::-webkit-scrollbar { width: 4px; }
+#messages::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+.msg-row {
+  display: flex;
+  padding: 4px 24px;
+  gap: 14px;
+  max-width: 860px;
+  margin: 0 auto;
+  width: 100%;
+  animation: fadeUp .25s ease both;
+}
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.msg-avatar {
+  width: 32px; height: 32px;
+  border-radius: 8px;
+  display: grid; place-items: center;
+  font-size: .85rem;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+.msg-avatar.user-av { background: var(--accent); }
+.msg-avatar.ai-av   { background: linear-gradient(135deg, #4fd1c5, #7c6af7); }
+
+.msg-body { flex: 1; min-width: 0; }
+.msg-role {
+  font-family: 'DM Mono', monospace;
+  font-size: .68rem;
+  color: var(--text3);
+  margin-bottom: 5px;
+  text-transform: uppercase;
+  letter-spacing: .8px;
+}
+
+.msg-content {
+  font-size: .95rem;
+  line-height: 1.7;
+  color: var(--text);
+}
+.msg-content p { margin-bottom: .6em; }
+.msg-content p:last-child { margin-bottom: 0; }
+.msg-content h1,h2,h3,h4 { margin: 1em 0 .4em; font-family: 'Fraunces', serif; }
+.msg-content ul,ol { padding-left: 1.5em; margin-bottom: .6em; }
+.msg-content li { margin-bottom: .2em; }
+.msg-content blockquote {
+  border-left: 3px solid var(--accent);
+  padding-left: 1em;
+  color: var(--text2);
+  margin: .5em 0;
+  font-style: italic;
+}
+.msg-content table {
+  border-collapse: collapse;
+  margin: .8em 0;
+  font-size: .88rem;
+  font-family: 'DM Mono', monospace;
+}
+.msg-content th, .msg-content td {
+  border: 1px solid var(--border);
+  padding: 6px 12px;
+}
+.msg-content th { background: var(--surface3); }
+.msg-content code:not(pre code) {
+  font-family: 'DM Mono', monospace;
+  font-size: .85em;
+  background: var(--code-bg);
+  border: 1px solid var(--border);
+  padding: 1px 6px;
+  border-radius: 4px;
+  color: var(--accent2);
+}
+.msg-content pre {
+  background: var(--code-bg) !important;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: auto;
+  position: relative;
+  margin: .6em 0;
+}
+.msg-content pre code { font-family: 'DM Mono', monospace; font-size: .83rem; }
+.code-copy {
+  position: absolute; top: 8px; right: 8px;
+  background: var(--surface3); border: 1px solid var(--border);
+  color: var(--text3); border-radius: 4px;
+  padding: 3px 8px; font-size: .68rem;
+  font-family: 'DM Mono', monospace;
+  cursor: pointer; opacity: 0; transition: opacity .15s;
+}
+.msg-content pre:hover .code-copy { opacity: 1; }
+.code-copy:hover { color: var(--text); }
+
+/* Streaming cursor */
+.cursor-blink::after {
+  content: '▍';
+  color: var(--accent);
+  animation: blink .7s step-end infinite;
+  margin-left: 1px;
+}
+@keyframes blink { 50% { opacity: 0; } }
+
+/* Tool call / confirmation */
+.tool-confirm-box {
+  background: var(--surface2);
+  border: 1px solid var(--warning);
+  border-radius: 8px;
+  padding: 14px 16px;
+  margin: 8px 0;
+  font-family: 'DM Mono', monospace;
+  font-size: .8rem;
+}
+.tool-confirm-box .tc-header {
+  display: flex; align-items: center; gap: 8px;
+  color: var(--warning);
+  font-weight: 500;
+  margin-bottom: 10px;
+}
+.tc-name { color: var(--accent2); font-weight: 500; }
+.tc-args {
+  background: var(--code-bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 8px 10px;
+  color: var(--text2);
+  white-space: pre-wrap;
+  word-break: break-all;
+  max-height: 160px;
+  overflow-y: auto;
+  margin-bottom: 12px;
+  font-size: .75rem;
+}
+.tc-buttons { display: flex; gap: 8px; }
+.tc-btn {
+  padding: 6px 14px; border-radius: 6px;
+  font-family: 'DM Mono', monospace; font-size: .74rem;
+  cursor: pointer; border: 1px solid; transition: all .15s;
+}
+.tc-btn.approve {
+  background: rgba(79,209,197,.12); border-color: var(--accent2); color: var(--accent2);
+}
+.tc-btn.approve:hover { background: rgba(79,209,197,.25); }
+.tc-btn.deny {
+  background: rgba(248,113,113,.1); border-color: var(--danger); color: var(--danger);
+}
+.tc-btn.deny:hover { background: rgba(248,113,113,.2); }
+
+/* Tool result */
+.tool-result-box {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent2);
+  border-radius: 8px;
+  padding: 10px 14px;
+  margin: 6px 0;
+  font-family: 'DM Mono', monospace;
+  font-size: .76rem;
+  color: var(--text2);
+  max-height: 200px;
+  overflow-y: auto;
+}
+.tool-result-box .tr-label {
+  color: var(--accent2); font-size: .68rem;
+  text-transform: uppercase; letter-spacing: .8px;
+  margin-bottom: 6px;
+}
+
+/* Input area */
+#input-area {
+  border-top: 1px solid var(--border);
+  padding: 16px 24px;
+  background: var(--surface);
+}
+.input-wrap {
+  max-width: 812px;
+  margin: 0 auto;
+  position: relative;
+}
+#user-input {
+  width: 100%;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: var(--text);
+  font-family: 'Fraunces', serif;
+  font-size: .95rem;
+  line-height: 1.6;
+  padding: 13px 52px 13px 16px;
+  resize: none;
+  outline: none;
+  min-height: 52px;
+  max-height: 180px;
+  transition: border-color .15s;
+  overflow-y: auto;
+}
+#user-input:focus { border-color: var(--accent); }
+#user-input::placeholder { color: var(--text3); font-style: italic; }
+
+#send-btn {
+  position: absolute; right: 10px; bottom: 10px;
+  width: 34px; height: 34px;
+  background: var(--accent);
+  border: none; border-radius: 7px;
+  cursor: pointer; display: grid; place-items: center;
+  transition: opacity .15s, transform .15s;
+  color: #fff;
+}
+#send-btn:hover { opacity: .85; transform: scale(1.05); }
+#send-btn:disabled { opacity: .4; cursor: not-allowed; transform: none; }
+#send-btn svg { width: 16px; height: 16px; }
+
+.input-hint {
+  font-family: 'DM Mono', monospace;
+  font-size: .66rem;
+  color: var(--text3);
+  text-align: center;
+  margin-top: 8px;
+  max-width: 812px;
+  margin-left: auto; margin-right: auto;
+}
+
+/* ── Settings Panel ── */
+#settings-panel {
+  padding: 32px 36px;
+  overflow-y: auto;
+  background: var(--bg);
+}
+#settings-panel::-webkit-scrollbar { width: 4px; }
+#settings-panel::-webkit-scrollbar-thumb { background: var(--border); }
+
+.settings-section {
+  max-width: 640px;
+  margin: 0 auto 36px;
+}
+.settings-section h2 {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 18px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border);
+  font-family: 'Fraunces', serif;
+  letter-spacing: -.3px;
+}
+.field { margin-bottom: 16px; }
+.field label {
+  display: block;
+  font-family: 'DM Mono', monospace;
+  font-size: .72rem;
+  color: var(--text2);
+  letter-spacing: .5px;
+  margin-bottom: 6px;
+  text-transform: uppercase;
+}
+.field input, .field select, .field textarea {
+  width: 100%;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  color: var(--text);
+  font-family: 'DM Mono', monospace;
+  font-size: .84rem;
+  padding: 9px 12px;
+  outline: none;
+  transition: border-color .15s;
+}
+.field input:focus, .field select:focus, .field textarea:focus { border-color: var(--accent); }
+.field textarea { resize: vertical; min-height: 120px; }
+.field input[type="password"] { letter-spacing: 2px; }
+
+.field-row { display: flex; gap: 10px; align-items: flex-end; }
+.field-row .field { flex: 1; margin-bottom: 0; }
+
+.btn-primary {
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: 7px;
+  padding: 9px 18px;
+  font-family: 'DM Mono', monospace;
+  font-size: .78rem;
+  cursor: pointer;
+  transition: opacity .15s;
+  letter-spacing: .3px;
+}
+.btn-primary:hover { opacity: .85; }
+
+.btn-secondary {
+  background: var(--surface3);
+  color: var(--text2);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  padding: 9px 18px;
+  font-family: 'DM Mono', monospace;
+  font-size: .78rem;
+  cursor: pointer;
+  transition: all .15s;
+  letter-spacing: .3px;
+}
+.btn-secondary:hover { color: var(--text); border-color: var(--text3); }
+
+.model-list {
+  display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px;
+}
+.model-chip {
+  padding: 4px 10px;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+  font-family: 'DM Mono', monospace;
+  font-size: .72rem;
+  color: var(--text2);
+  cursor: pointer;
+  transition: all .15s;
+}
+.model-chip:hover { border-color: var(--accent); color: var(--accent); }
+.model-chip.selected { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+.status-msg {
+  font-family: 'DM Mono', monospace;
+  font-size: .75rem;
+  padding: 8px 12px;
+  border-radius: 6px;
+  margin-top: 10px;
+  display: none;
+}
+.status-msg.ok { background: rgba(79,209,197,.1); color: var(--accent2); border: 1px solid rgba(79,209,197,.3); }
+.status-msg.err { background: rgba(248,113,113,.1); color: var(--danger); border: 1px solid rgba(248,113,113,.3); }
+
+/* ── MCP Panel ── */
+#mcp-panel {
+  padding: 32px 36px;
+  overflow-y: auto;
+  background: var(--bg);
+}
+#mcp-panel::-webkit-scrollbar { width: 4px; }
+#mcp-panel::-webkit-scrollbar-thumb { background: var(--border); }
+
+.mcp-inner { max-width: 640px; margin: 0 auto; }
+.mcp-inner h2 {
+  font-size: 1rem; font-weight: 600; color: var(--text);
+  margin-bottom: 18px; padding-bottom: 10px; border-bottom: 1px solid var(--border);
+  font-family: 'Fraunces', serif;
+}
+#mcp-config-editor {
+  width: 100%;
+  background: var(--code-bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--accent2);
+  font-family: 'DM Mono', monospace;
+  font-size: .8rem;
+  padding: 14px;
+  outline: none;
+  min-height: 240px;
+  resize: vertical;
+  tab-size: 2;
+}
+#mcp-config-editor:focus { border-color: var(--accent); }
+
+.tool-card {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px 14px;
+  margin-bottom: 8px;
+}
+.tool-card-header { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+.tool-card-name {
+  font-family: 'DM Mono', monospace;
+  font-size: .82rem;
+  color: var(--accent2);
+  font-weight: 500;
+}
+.tool-card-server {
+  font-family: 'DM Mono', monospace;
+  font-size: .68rem;
+  color: var(--text3);
+  background: var(--surface3);
+  padding: 2px 7px;
+  border-radius: 10px;
+}
+.tool-card-desc { font-size: .82rem; color: var(--text2); }
+
+/* ── Empty state ── */
+#empty-state {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: var(--text3);
+  gap: 12px;
+  padding: 40px;
+  text-align: center;
+}
+#empty-state .es-icon { font-size: 2.5rem; opacity: .5; }
+#empty-state .es-title { font-size: 1.1rem; color: var(--text2); font-weight: 600; }
+#empty-state .es-sub { font-family: 'DM Mono', monospace; font-size: .78rem; max-width: 280px; line-height: 1.6; }
+
+/* Toasts */
+#toast-container { position: fixed; bottom: 24px; right: 24px; z-index: 9999; display: flex; flex-direction: column; gap: 8px; }
+.toast {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 16px;
+  font-family: 'DM Mono', monospace;
+  font-size: .78rem;
+  color: var(--text);
+  animation: slideIn .2s ease;
+  max-width: 300px;
+}
+@keyframes slideIn { from { transform: translateX(20px); opacity:0; } to { transform:none; opacity:1; } }
+
+/* ── Responsive ── */
+@media (max-width: 680px) {
+  #sidebar { width: 200px; min-width: 200px; }
+}
+</style>
+</head>
+<body>
+
+<!-- ── Sidebar ── -->
+<aside id="sidebar">
+  <div id="sidebar-header">
+    <div class="logo">Lu<span>men</span></div>
+    <button id="btn-new-chat">+ New</button>
+  </div>
+  <div id="conv-list"></div>
+  <div id="sidebar-footer">
+    <button class="sidebar-tab active" data-tab="chat">Chat</button>
+    <button class="sidebar-tab" data-tab="settings">Settings</button>
+    <button class="sidebar-tab" data-tab="mcp">MCP</button>
+  </div>
+</aside>
+
+<!-- ── Main ── -->
+<main id="main">
+
+  <!-- Chat Panel -->
+  <div class="panel active" id="chat-panel">
+    <div id="chat-header">
+      <input id="chat-title-input" type="text" placeholder="Untitled Conversation" maxlength="80" />
+      <span id="model-badge">No model selected</span>
+    </div>
+
+    <div id="messages">
+      <div id="empty-state">
+        <div class="es-icon">✦</div>
+        <div class="es-title">Start a conversation</div>
+        <div class="es-sub">Type a message below, or create a new conversation from the sidebar.</div>
+      </div>
+    </div>
+
+    <div id="input-area">
+      <div class="input-wrap">
+        <textarea id="user-input" rows="1" placeholder="Ask anything…"></textarea>
+        <button id="send-btn" title="Send (Enter)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="22" y1="2" x2="11" y2="13"></line>
+            <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+          </svg>
+        </button>
+      </div>
+      <div class="input-hint">Enter to send · Shift+Enter for newline · MCP tools require approval</div>
+    </div>
+  </div>
+
+  <!-- Settings Panel -->
+  <div class="panel" id="settings-panel">
+    <div class="settings-section">
+      <h2>API Configuration</h2>
+
+      <div class="field">
+        <label>API Base URL</label>
+        <input type="text" id="api-base" placeholder="https://api.openai.com/v1" />
+      </div>
+      <div class="field">
+        <label>API Key</label>
+        <input type="password" id="api-key" placeholder="sk-…" autocomplete="off" />
+      </div>
+
+      <div class="field-row" style="margin-bottom:16px;">
+        <button class="btn-primary" id="btn-fetch-models">Fetch Models</button>
+        <button class="btn-secondary" id="btn-save-settings">Save Settings</button>
+      </div>
+
+      <div id="settings-status" class="status-msg"></div>
+
+      <div class="model-list" id="model-list"></div>
+    </div>
+
+    <div class="settings-section">
+      <h2>System Prompt</h2>
+      <div class="field">
+        <textarea id="system-prompt" placeholder="You are a helpful assistant…"></textarea>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- MCP Panel -->
+  <div class="panel" id="mcp-panel">
+    <div class="mcp-inner">
+      <h2>MCP Server Configuration</h2>
+      <div class="field">
+        <label>mcp.json</label>
+        <textarea id="mcp-config-editor" spellcheck="false"></textarea>
+      </div>
+      <div style="display:flex;gap:10px;margin-bottom:24px;">
+        <button class="btn-primary" id="btn-save-mcp">Save Config</button>
+        <button class="btn-secondary" id="btn-reload-tools">Reload Tools</button>
+      </div>
+      <div id="mcp-status" class="status-msg"></div>
+
+      <h2 style="margin-top:28px;">Available Tools</h2>
+      <div id="tool-list"><div style="font-family:'DM Mono',monospace;font-size:.78rem;color:var(--text3);">No tools loaded — click Reload Tools</div></div>
+    </div>
+  </div>
+
+</main>
+
+<div id="toast-container"></div>
+
+<script>
+// ══════════════════════════════════════════════════════════
+// STATE
+// ══════════════════════════════════════════════════════════
+const state = {
+  convId: null,
+  messages: [],       // [{role, content}] — sent to API
+  displayLog: [],     // [{type, role, content} | {type:'tool_result', name, result}] — for rendering
+  mcpTools: [],       // raw tools from server
+  isStreaming: false,
+
+  // Settings (persisted to localStorage)
+  apiBase: 'https://api.openai.com/v1',
+  apiKey: '',
+  model: '',
+  systemPrompt: '',
+  maxTokens: 4096,
+  temperature: 0.7,
+};
+
+// ══════════════════════════════════════════════════════════
+// MARKDOWN + LATEX RENDERER
+// ══════════════════════════════════════════════════════════
+marked.setOptions({ breaks: true, gfm: true });
+
+function renderMarkdown(text) {
+  // Pre-process: protect LaTeX blocks from markdown
+  const latexBlocks = [];
+  let idx = 0;
+  const safeText = text
+    .replace(/\$\$[\s\S]+?\$\$/g, m => { latexBlocks.push({type:'block', src:m}); return `__LATEX_BLOCK_${idx++}__`; })
+    .replace(/\$[^\$\n]+?\$/g,    m => { latexBlocks.push({type:'inline', src:m}); return `__LATEX_BLOCK_${idx++}__`; });
+
+  let html = marked.parse(safeText);
+
+  // Restore LaTeX
+  latexBlocks.forEach((lb, i) => {
+    const math = lb.src.replace(/^\$+|\$+$/g, '').trim();
+    try {
+      const rendered = katex.renderToString(math, { displayMode: lb.type === 'block', throwOnError: false });
+      html = html.replace(`__LATEX_BLOCK_${i}__`, rendered);
+    } catch(e) {
+      html = html.replace(`__LATEX_BLOCK_${i}__`, lb.src);
+    }
+  });
+
+  html = DOMPurify.sanitize(html, {
+    ADD_TAGS: ['math', 'semantics', 'mrow', 'mi', 'mo', 'mn', 'mfrac', 'msup', 'msub','mspace','mtext','annotation','svg','path','use','defs','g'],
+    ADD_ATTR: ['class','style','xmlns','viewBox','d','fill','stroke','href','xlink:href','width','height','aria-hidden'],
+  });
+
+  return html;
+}
+
+function applyMarkdown(el, text) {
+  el.innerHTML = renderMarkdown(text);
+  el.querySelectorAll('pre code').forEach(block => {
+    hljs.highlightElement(block);
+    // Add copy button
+    const pre = block.parentElement;
+    const btn = document.createElement('button');
+    btn.className = 'code-copy'; btn.textContent = 'copy';
+    btn.onclick = () => { navigator.clipboard.writeText(block.innerText); btn.textContent = 'copied!'; setTimeout(()=>btn.textContent='copy',1500); };
+    pre.appendChild(btn);
+  });
+}
+
+// ══════════════════════════════════════════════════════════
+// SETTINGS (localStorage)
+// ══════════════════════════════════════════════════════════
+const SETTINGS_KEY = 'lumen_settings';
+function loadSettings() {
+  try {
+    const s = JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}');
+    Object.assign(state, {
+      apiBase:      s.apiBase      || 'https://api.openai.com/v1',
+      apiKey:       s.apiKey       || '',
+      model:        s.model        || '',
+      systemPrompt: s.systemPrompt || '',
+      maxTokens:    s.maxTokens    || 4096,
+      temperature:  s.temperature  || 0.7,
+    });
+  } catch(e) {}
+  try {
+    const saved = localStorage.getItem('lumen_mcp_tools');
+    if (saved) state.mcpTools = JSON.parse(saved);
+  } catch(e) {}
+  try {
+    const savedModels = localStorage.getItem('lumen_models');
+    if (savedModels) renderModelList(JSON.parse(savedModels));
+  } catch(e) {}
+  // Populate UI
+  document.getElementById('api-base').value      = state.apiBase;
+  document.getElementById('api-key').value       = state.apiKey;
+  document.getElementById('system-prompt').value = state.systemPrompt;
+
+  updateModelBadge();
+}
+
+function saveSettings() {
+  state.apiBase      = document.getElementById('api-base').value.trim();
+  state.apiKey       = document.getElementById('api-key').value.trim();
+  state.systemPrompt = document.getElementById('system-prompt').value.trim();
+
+  localStorage.setItem(SETTINGS_KEY, JSON.stringify({
+    apiBase: state.apiBase, apiKey: state.apiKey, model: state.model,
+    systemPrompt: state.systemPrompt, maxTokens: state.maxTokens, temperature: state.temperature,
+  }));
+  showStatus('settings-status', 'Settings saved ✓', 'ok');
+  updateModelBadge();
+}
+
+function updateModelBadge() {
+  document.getElementById('model-badge').textContent = state.model || 'No model selected';
+}
+
+// ══════════════════════════════════════════════════════════
+// CONVERSATIONS
+// ══════════════════════════════════════════════════════════
+async function fetchConversations() {
+  const r = await fetch('/api/conversations');
+  return r.json();
+}
+
+async function loadConversationList() {
+  const list = await fetchConversations();
+  const el = document.getElementById('conv-list');
+  el.innerHTML = '';
+  list.forEach(c => {
+    const item = document.createElement('div');
+    item.className = 'conv-item' + (c.id === state.convId ? ' active' : '');
+    item.dataset.id = c.id;
+    item.innerHTML = `
+      <div class="conv-item-icon">💬</div>
+      <div class="conv-item-info">
+        <div class="conv-item-title">${escapeHtml(c.title)}</div>
+        <div class="conv-item-meta">${c.message_count} msgs</div>
+      </div>
+      <button class="conv-del" title="Delete" data-id="${c.id}">✕</button>
+    `;
+    item.addEventListener('click', e => {
+      if(e.target.classList.contains('conv-del')) return;
+      openConversation(c.id);
+    });
+    item.querySelector('.conv-del').addEventListener('click', async e => {
+      e.stopPropagation();
+      if(!confirm('Delete this conversation?')) return;
+      await fetch(`/api/conversations/${c.id}`, {method:'DELETE'});
+      if(state.convId === c.id) { state.convId=null; state.messages=[]; clearMessages(); }
+      loadConversationList();
+    });
+    el.appendChild(item);
+  });
+}
+
+async function openConversation(id) {
+  const r = await fetch(`/api/conversations/${id}`);
+  const data = await r.json();
+  state.convId = id;
+  localStorage.setItem('lumen_last_conv', id);
+  state.messages = data.messages || [];
+  state.displayLog = data.displayLog || [];
+  document.getElementById('chat-title-input').value = data.title || '';
+  renderAllMessages();
+  loadConversationList();
+  switchTab('chat');
+}
+
+async function createNewConversation() {
+  const r = await fetch('/api/conversations', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({title:'New Conversation'})
+  });
+  const data = await r.json();
+  state.convId = data.id;
+  localStorage.setItem('lumen_last_conv', data.id);
+  state.messages = [];
+  state.displayLog = [];
+  document.getElementById('chat-title-input').value = 'New Conversation';
+  clearMessages();
+  loadConversationList();
+  switchTab('chat');
+}
+
+async function persistConversation() {
+  if(!state.convId) return;
+  const title = document.getElementById('chat-title-input').value.trim() || 'Untitled';
+  await fetch(`/api/conversations/${state.convId}`, {
+    method:'PUT', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({title, messages: state.messages, displayLog: state.displayLog})
+  });
+  loadConversationList();
+}
+
+// ══════════════════════════════════════════════════════════
+// MESSAGE RENDERING
+// ══════════════════════════════════════════════════════════
+function clearMessages() {
+  const el = document.getElementById('messages');
+  el.innerHTML = '<div id="empty-state"><div class="es-icon">✦</div><div class="es-title">Start a conversation</div><div class="es-sub">Type a message below.</div></div>';
+}
+
+function removeEmptyState() {
+  const es = document.getElementById('empty-state');
+  if(es) es.remove();
+}
+
+function renderAllMessages() {
+  const el = document.getElementById('messages');
+  el.innerHTML = '';
+  if (state.displayLog.length > 0) {
+    state.displayLog.forEach(entry => {
+      if (entry.type === 'message') {
+        appendMessage(entry.role, entry.content);
+      } else if (entry.type === 'tool_result') {
+        appendToolResult(entry.name, entry.result);
+      }
+    });
+  }
+  scrollToBottom();
+}
+
+function appendMessage(role, content) {
+  if (!content) return;
+  removeEmptyState();
+  const row = document.createElement('div');
+  row.className = 'msg-row';
+
+  const avatar = document.createElement('div');
+  avatar.className = `msg-avatar ${role === 'user' ? 'user-av' : 'ai-av'}`;
+  avatar.textContent = role === 'user' ? '✦' : '◈';
+
+  const body = document.createElement('div');
+  body.className = 'msg-body';
+  body.innerHTML = `<div class="msg-role">${role === 'user' ? 'You' : 'Assistant'}</div>`;
+
+  const content_el = document.createElement('div');
+  content_el.className = 'msg-content';
+
+  if(typeof content === 'string') {
+    applyMarkdown(content_el, content);
+  } else if(Array.isArray(content)) {
+    // multi-part
+    content.forEach(part => {
+      if(part.type === 'text') {
+        const t = document.createElement('div');
+        applyMarkdown(t, part.text);
+        content_el.appendChild(t);
+      }
+    });
+  }
+
+  body.appendChild(content_el);
+  row.appendChild(avatar);
+  row.appendChild(body);
+  document.getElementById('messages').appendChild(row);
+  scrollToBottom();
+  return content_el;
+}
+
+function createStreamingMessage() {
+  removeEmptyState();
+  const row = document.createElement('div');
+  row.className = 'msg-row';
+
+  const avatar = document.createElement('div');
+  avatar.className = 'msg-avatar ai-av';
+  avatar.textContent = '◈';
+
+  const body = document.createElement('div');
+  body.className = 'msg-body';
+  body.innerHTML = '<div class="msg-role">Assistant</div>';
+
+  const content_el = document.createElement('div');
+  content_el.className = 'msg-content cursor-blink';
+  content_el.innerHTML = '&nbsp;';
+
+  body.appendChild(content_el);
+  row.appendChild(avatar);
+  row.appendChild(body);
+  document.getElementById('messages').appendChild(row);
+  scrollToBottom();
+  return content_el;
+}
+
+function scrollToBottom() {
+  const el = document.getElementById('messages');
+  el.scrollTop = el.scrollHeight;
+}
+
+// ══════════════════════════════════════════════════════════
+// TOOL CONFIRMATION UI
+// ══════════════════════════════════════════════════════════
+function showToolConfirmation(calls) {
+  return new Promise(resolve => {
+    const row = document.createElement('div');
+    row.className = 'msg-row';
+
+    const avatar = document.createElement('div');
+    avatar.className = 'msg-avatar ai-av';
+    avatar.textContent = '⚙';
+
+    const body = document.createElement('div');
+    body.className = 'msg-body';
+    body.innerHTML = '<div class="msg-role">Tool Request</div>';
+
+    calls.forEach((call, i) => {
+      let args = {};
+      try { args = JSON.parse(call.function.arguments || '{}'); } catch(e) {}
+      const box = document.createElement('div');
+      box.className = 'tool-confirm-box';
+      box.innerHTML = `
+        <div class="tc-header">
+          <span>⚠</span>
+          <span>Tool call requires your approval</span>
+        </div>
+        <div style="margin-bottom:8px;font-family:'DM Mono',monospace;font-size:.78rem;">
+          <span style="color:var(--text2);">Tool: </span>
+          <span class="tc-name">${escapeHtml(call.function.name)}</span>
+        </div>
+        <div style="margin-bottom:6px;font-family:'DM Mono',monospace;font-size:.72rem;color:var(--text3);">Arguments:</div>
+        <div class="tc-args">${escapeHtml(JSON.stringify(args, null, 2))}</div>
+        <div class="tc-buttons">
+          <button class="tc-btn approve" data-idx="${i}">✓ Allow</button>
+          <button class="tc-btn deny"   data-idx="${i}">✕ Deny</button>
+        </div>
+      `;
+      body.appendChild(box);
+    });
+
+    row.appendChild(avatar);
+    row.appendChild(body);
+    document.getElementById('messages').appendChild(row);
+    scrollToBottom();
+
+    // Resolve when ALL calls have been approved or denied
+    const decisions = new Array(calls.length).fill(null);
+    const checkDone = () => {
+      if(decisions.every(d => d !== null)) {
+        row.style.transition = 'opacity .2s ease';
+        row.style.opacity = '0';
+        setTimeout(() => row.remove(), 200);
+        resolve(decisions);
+      }
+    };
+
+    row.querySelectorAll('.tc-btn.approve').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const idx = parseInt(btn.dataset.idx);
+        decisions[idx] = true;
+        btn.closest('.tc-buttons').innerHTML = '<span style="color:var(--accent2);font-family:\'DM Mono\',monospace;font-size:.76rem;">✓ Approved</span>';
+        checkDone();
+      });
+    });
+    row.querySelectorAll('.tc-btn.deny').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const idx = parseInt(btn.dataset.idx);
+        decisions[idx] = false;
+        btn.closest('.tc-buttons').innerHTML = '<span style="color:var(--danger);font-family:\'DM Mono\',monospace;font-size:.76rem;">✕ Denied</span>';
+        checkDone();
+      });
+    });
+  });
+}
+
+function appendToolResult(toolName, result) {
+  const row = document.createElement('div');
+  row.className = 'msg-row';
+
+  const avatar = document.createElement('div');
+  avatar.className = 'msg-avatar ai-av';
+  avatar.textContent = '⚙';
+
+  const body = document.createElement('div');
+  body.className = 'msg-body';
+  body.innerHTML = '<div class="msg-role">Tool Result</div>';
+
+  const box = document.createElement('div');
+  box.className = 'tool-result-box';
+  box.innerHTML = `<div class="tr-label">${escapeHtml(toolName)}</div><div>${escapeHtml(String(result))}</div>`;
+  body.appendChild(box);
+  row.appendChild(avatar);
+  row.appendChild(body);
+  document.getElementById('messages').appendChild(row);
+  scrollToBottom();
+}
+
+// ══════════════════════════════════════════════════════════
+// CHAT — SEND
+// ══════════════════════════════════════════════════════════
+function buildToolsPayload() {
+  return state.mcpTools.map(t => ({
+    type: 'function',
+    function: {
+      name: t.name,
+      description: t.description,
+      parameters: t.inputSchema || { type: 'object', properties: {} },
+    }
+  }));
+}
+
+async function sendMessage(userText) {
+  if(!userText.trim() || state.isStreaming) return;
+  if(!state.convId) await createNewConversation();
+
+  state.isStreaming = true;
+  document.getElementById('send-btn').disabled = true;
+
+  // Auto-title
+  if(state.messages.length === 0) {
+    const autoTitle = userText.slice(0, 40) + (userText.length > 40 ? '…' : '');
+    document.getElementById('chat-title-input').value = autoTitle;
+  }
+
+  // Add user message
+  state.messages.push({role:'user', content: userText});
+  state.displayLog.push({type:'message', role:'user', content: userText});
+  appendMessage('user', userText);
+
+  await runChatLoop();
+
+  await persistConversation();
+  state.isStreaming = false;
+  document.getElementById('send-btn').disabled = false;
+}
+
+async function runChatLoop() {
+  const tools = buildToolsPayload();
+
+  // Build API messages
+  const apiMessages = [];
+  if(state.systemPrompt) apiMessages.push({role:'system', content: state.systemPrompt});
+  apiMessages.push(...state.messages);
+
+  // Start streaming response
+  const contentEl = createStreamingMessage();
+  let accText = '';
+
+  try {
+    const resp = await fetch('/api/chat/stream', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        api_base: state.apiBase,
+        api_key: state.apiKey,
+        model: state.model || 'gpt-4o',
+        messages: apiMessages,
+        tools: tools.length > 0 ? tools : undefined,
+      })
+    });
+
+    const reader = resp.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+    let toolCalls = null;
+
+    while(true) {
+      const {done, value} = await reader.read();
+      if(done) break;
+      buffer += decoder.decode(value, {stream: true});
+      const lines = buffer.split('\n');
+      buffer = lines.pop();
+
+      for(const line of lines) {
+        if(!line.startsWith('data: ')) continue;
+        const data = line.slice(6).trim();
+        if(data === '[DONE]') break;
+        try {
+          const evt = JSON.parse(data);
+          if(evt.type === 'text') {
+            accText += evt.content;
+            contentEl.classList.add('cursor-blink');
+            applyMarkdown(contentEl, accText);
+            scrollToBottom();
+          } else if(evt.type === 'tool_calls') {
+            toolCalls = evt.calls;
+          } else if(evt.type === 'error') {
+            contentEl.classList.remove('cursor-blink');
+            contentEl.innerHTML = `<span style="color:var(--danger)">Error: ${escapeHtml(evt.message)}</span>`;
+            return;
+          }
+        } catch(e) {}
+      }
+    }
+
+    contentEl.classList.remove('cursor-blink');
+
+    // ── Handle tool calls ────────────────────────────────
+    if(toolCalls && toolCalls.length > 0) {
+      // Save any preceding text to displayLog
+      if(accText) state.displayLog.push({type:'message', role:'assistant', content: accText});
+      // Push assistant message with tool_calls
+      state.messages.push({
+        role:'assistant',
+        content: accText || null,
+        tool_calls: toolCalls.map(tc => ({
+          id: tc.id,
+          type: 'function',
+          function: { name: tc.function.name, arguments: tc.function.arguments }
+        }))
+      });
+
+      // Show confirmation UI
+      const decisions = await showToolConfirmation(toolCalls);
+
+      // Execute approved tools
+      for(let i=0; i<toolCalls.length; i++) {
+        const tc = toolCalls[i];
+        let result = '';
+        if(decisions[i]) {
+          // Find server for this tool
+          const toolDef = state.mcpTools.find(t => t.name === tc.function.name);
+          let args = {};
+          try { args = JSON.parse(tc.function.arguments || '{}'); } catch(e) {}
+
+          if(toolDef) {
+            try {
+              const r = await fetch('/api/mcp/call', {
+                method:'POST', headers:{'Content-Type':'application/json'},
+                body: JSON.stringify({server: toolDef.server, tool: tc.function.name, arguments: args})
+              });
+              const rd = await r.json();
+              result = rd.result || rd.error || '';
+            } catch(e) { result = `Error: ${e.message}`; }
+          } else {
+            result = 'Tool not found in any MCP server.';
+          }
+          appendToolResult(tc.function.name, result);
+          state.displayLog.push({type:'tool_result', name: tc.function.name, result});
+        } else {
+          result = 'Tool execution denied by user.';
+          appendToolResult(tc.function.name, result);
+          state.displayLog.push({type:'tool_result', name: tc.function.name, result});
+        }
+
+        // Push tool result message
+        state.messages.push({
+          role:'tool',
+          tool_call_id: tc.id,
+          content: result,
+        });
+      }
+
+      // Continue the loop (model may need to respond after tool results)
+      await runChatLoop();
+    } else {
+      // Normal text response
+      if(accText) {
+        state.messages.push({role:'assistant', content: accText});
+        state.displayLog.push({type:'message', role:'assistant', content: accText});
+      }
+    }
+
+  } catch(e) {
+    contentEl.classList.remove('cursor-blink');
+    contentEl.innerHTML = `<span style="color:var(--danger)">Network error: ${escapeHtml(e.message)}</span>`;
+  }
+}
+
+// ══════════════════════════════════════════════════════════
+// MCP
+// ══════════════════════════════════════════════════════════
+async function loadMcpConfig() {
+  const r = await fetch('/api/mcp/config');
+  const cfg = await r.json();
+  document.getElementById('mcp-config-editor').value = JSON.stringify(cfg, null, 2);
+}
+
+async function saveMcpConfig() {
+  try {
+    const cfg = JSON.parse(document.getElementById('mcp-config-editor').value);
+    await fetch('/api/mcp/config', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify(cfg)
+    });
+    showStatus('mcp-status', 'Config saved ✓', 'ok');
+  } catch(e) {
+    showStatus('mcp-status', 'Invalid JSON: ' + e.message, 'err');
+  }
+}
+
+async function reloadTools() {
+  showStatus('mcp-status', 'Loading tools…', 'ok');
+  try {
+    const r = await fetch('/api/mcp/tools');
+    state.mcpTools = await r.json();
+    localStorage.setItem('lumen_mcp_tools', JSON.stringify(state.mcpTools));
+    renderToolList();
+    showStatus('mcp-status', `${state.mcpTools.length} tool(s) loaded ✓`, 'ok');
+  } catch(e) {
+    showStatus('mcp-status', 'Error loading tools: ' + e.message, 'err');
+  }
+}
+
+function renderToolList() {
+  const el = document.getElementById('tool-list');
+  if(state.mcpTools.length === 0) {
+    el.innerHTML = '<div style="font-family:\'DM Mono\',monospace;font-size:.78rem;color:var(--text3);">No tools available</div>';
+    return;
+  }
+  el.innerHTML = state.mcpTools.map(t => `
+    <div class="tool-card">
+      <div class="tool-card-header">
+        <span class="tool-card-name">${escapeHtml(t.name)}</span>
+        <span class="tool-card-server">${escapeHtml(t.server)}</span>
+      </div>
+      <div class="tool-card-desc">${escapeHtml(t.description)}</div>
+    </div>
+  `).join('');
+}
+
+// ══════════════════════════════════════════════════════════
+// MODEL FETCH
+// ══════════════════════════════════════════════════════════
+async function fetchModels() {
+  const apiBase = document.getElementById('api-base').value.trim();
+  const apiKey  = document.getElementById('api-key').value.trim();
+  try {
+    const r = await fetch('/api/models', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({api_base: apiBase, api_key: apiKey})
+    });
+    const d = await r.json();
+    if(d.error) { showStatus('settings-status', d.error, 'err'); return; }
+    localStorage.setItem('lumen_models', JSON.stringify(d.models || []));
+    renderModelList(d.models || []);
+    showStatus('settings-status', `${d.models.length} models fetched ✓`, 'ok');
+  } catch(e) {
+    showStatus('settings-status', 'Error: ' + e.message, 'err');
+  }
+}
+
+function renderModelList(models) {
+  const el = document.getElementById('model-list');
+  el.innerHTML = models.map(m => `
+    <div class="model-chip ${m === state.model ? 'selected' : ''}" data-model="${escapeHtml(m)}">${escapeHtml(m)}</div>
+  `).join('');
+  el.querySelectorAll('.model-chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      state.model = chip.dataset.model;
+      el.querySelectorAll('.model-chip').forEach(c => c.classList.remove('selected'));
+      chip.classList.add('selected');
+      updateModelBadge();
+      saveSettings();
+    });
+  });
+}
+
+// ══════════════════════════════════════════════════════════
+// UI HELPERS
+// ══════════════════════════════════════════════════════════
+function switchTab(tab) {
+  document.querySelectorAll('.sidebar-tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
+  document.querySelectorAll('.panel').forEach(p => p.classList.toggle('active', p.id === tab + '-panel'));
+}
+
+function showStatus(id, msg, type) {
+  const el = document.getElementById(id);
+  el.textContent = msg;
+  el.className = 'status-msg ' + type;
+  el.style.display = 'block';
+  setTimeout(() => el.style.display = 'none', 4000);
+}
+
+function escapeHtml(str) {
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function toast(msg) {
+  const el = document.createElement('div');
+  el.className = 'toast';
+  el.textContent = msg;
+  document.getElementById('toast-container').appendChild(el);
+  setTimeout(() => el.remove(), 3000);
+}
+
+// ══════════════════════════════════════════════════════════
+// EVENT BINDINGS
+// ══════════════════════════════════════════════════════════
+document.getElementById('btn-new-chat').addEventListener('click', createNewConversation);
+
+document.querySelectorAll('.sidebar-tab').forEach(tab => {
+  tab.addEventListener('click', () => switchTab(tab.dataset.tab));
+});
+
+document.getElementById('send-btn').addEventListener('click', () => {
+  const input = document.getElementById('user-input');
+  const text = input.value.trim();
+  if(text) { input.value = ''; autoResize(input); sendMessage(text); }
+});
+
+document.getElementById('user-input').addEventListener('keydown', e => {
+  if(e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    const text = e.target.value.trim();
+    if(text) { e.target.value = ''; autoResize(e.target); sendMessage(text); }
+  }
+});
+
+document.getElementById('user-input').addEventListener('input', e => autoResize(e.target));
+
+function autoResize(el) {
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 180) + 'px';
+}
+
+document.getElementById('chat-title-input').addEventListener('change', persistConversation);
+
+document.getElementById('btn-save-settings').addEventListener('click', saveSettings);
+document.getElementById('btn-fetch-models').addEventListener('click', fetchModels);
+
+document.getElementById('btn-save-mcp').addEventListener('click', saveMcpConfig);
+document.getElementById('btn-reload-tools').addEventListener('click', reloadTools);
+
+// ══════════════════════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════════════════════
+(async () => {
+  loadSettings();
+  renderToolList();  // show cached tools immediately
+  await loadConversationList();
+  await loadMcpConfig();
+  const lastConvId = localStorage.getItem('lumen_last_conv');
+  if (lastConvId) {
+    try { await openConversation(lastConvId); } catch(e) {}
+  }
+})();
+</script>
+</body>
+</html>
