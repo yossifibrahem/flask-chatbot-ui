@@ -6,6 +6,7 @@ from __future__ import annotations
 import asyncio
 import json
 import os
+import threading
 import uuid
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
@@ -25,6 +26,11 @@ CONVERSATIONS_DIR = Path("conversations")
 CONVERSATIONS_DIR.mkdir(exist_ok=True)
 
 MCP_CONFIG_FILE = Path("mcp.json")
+
+# ── Cancel registry ───────────────────────────────────────────────────────────
+# Maps stream_id → threading.Event. The generator checks this on every chunk;
+# POST /api/chat/cancel sets the event to stop generation server-side.
+_cancel_events: dict[str, threading.Event] = {}
 
 # ── Request helpers ───────────────────────────────────────────────────────────
 
@@ -220,8 +226,15 @@ def stream_chat_completion(
     model: str,
     messages: list[dict],
     tools: list[dict],
+    cancel_event: threading.Event,
 ) -> Generator[str, None, None]:
-    """Yield SSE strings for a streaming OpenAI chat completion."""
+    """Yield SSE strings for a streaming OpenAI chat completion.
+
+    cancel_event is checked before every yielded chunk. When the frontend
+    calls POST /api/chat/cancel the event is set, the loop breaks, the
+    OpenAI HTTP stream is closed, and [DONE] is flushed to the client.
+    """
+    openai_stream = None
     try:
         request_kwargs: dict[str, Any] = {
             "model": model,
@@ -233,8 +246,14 @@ def stream_chat_completion(
             request_kwargs["tool_choice"] = "auto"
 
         accumulated_tool_calls: dict[int, dict] = {}
+        openai_stream = client.chat.completions.create(**request_kwargs)
 
-        for chunk in client.chat.completions.create(**request_kwargs):
+        for chunk in openai_stream:
+            # Stop as soon as the cancel endpoint has been called.
+            if cancel_event.is_set():
+                openai_stream.close()
+                break
+
             delta = chunk.choices[0].delta if chunk.choices else None
             if delta is None:
                 continue
@@ -349,10 +368,28 @@ def api_chat_stream():
     model: str = body.get("model", "gpt-4o")
     messages: list = body.get("messages", [])
     tools: list = body.get("tools", [])
+    stream_id: str = body.get("stream_id") or str(uuid.uuid4())
 
-    return _streaming_response(
-        stream_chat_completion(client, model, messages, tools)
-    )
+    cancel_event = threading.Event()
+    _cancel_events[stream_id] = cancel_event
+
+    def generator_with_cleanup():
+        try:
+            yield from stream_chat_completion(client, model, messages, tools, cancel_event)
+        finally:
+            _cancel_events.pop(stream_id, None)
+
+    return _streaming_response(generator_with_cleanup())
+
+
+@app.route("/api/chat/cancel", methods=["POST"])
+def api_chat_cancel():
+    stream_id: str = _request_body().get("stream_id", "")
+    event = _cancel_events.get(stream_id)
+    if event:
+        event.set()
+        return jsonify({"ok": True})
+    return jsonify({"ok": False, "reason": "stream not found"}), 404
 
 
 # Model listing
