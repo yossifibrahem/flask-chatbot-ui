@@ -544,18 +544,6 @@ body {
 #empty-state .es-title { font-size: 1.1rem; color: var(--text2); font-weight: 600; }
 #empty-state .es-sub { font-family: 'DM Mono', monospace; font-size: .78rem; max-width: 280px; line-height: 1.6; }
 
-/* Toasts */
-#toast-container {
-  position: fixed; bottom: 24px; right: 24px; z-index: 9999;
-  display: flex; flex-direction: column; gap: 8px;
-}
-.toast {
-  background: var(--surface2); border: 1px solid var(--border); border-radius: 8px;
-  padding: 10px 16px; font-family: 'DM Mono', monospace; font-size: .78rem;
-  color: var(--text); animation: slideIn .2s ease; max-width: 300px;
-}
-@keyframes slideIn { from { transform: translateX(20px); opacity:0; } to { transform:none; opacity:1; } }
-
 /* ── Responsive ────────────────────────────────────────────────── */
 @media (max-width: 680px) {
   #sidebar { width: 200px; min-width: 200px; }
@@ -661,39 +649,47 @@ body {
 
 </main>
 
-<div id="toast-container"></div>
-
 <script>
 // ══════════════════════════════════════════════════════════════════
 // STATE
+// Settings are seeded from SETTINGS_DEFAULTS so there's one source
+// of truth; loadSettings() overwrites them from localStorage on init.
 // ══════════════════════════════════════════════════════════════════
+
+const SETTINGS_DEFAULTS = {
+  apiBase:      'https://api.openai.com/v1',
+  apiKey:       '',
+  model:        '',
+  systemPrompt: '',
+};
+
 const state = {
-  convId: null,
-  messages: [],      // [{role, content}] — sent to the API
-  displayLog: [],    // [{type, role, content} | {type:'tool_result', name, result}] — for rendering
-  mcpTools: [],      // tool definitions fetched from MCP servers
+  // Runtime
+  convId:      null,
+  messages:    [],    // [{role, content}] — sent to the API
+  displayLog:  [],    // [{type, role, content} | {type:'tool_result', name, result}]
+  mcpTools:    [],    // tool definitions fetched from MCP servers
   isStreaming: false,
 
-  // Settings (persisted in localStorage)
-  apiBase: 'https://api.openai.com/v1',
-  apiKey: '',
-  model: '',
-  systemPrompt: '',
+  // Persistent settings (overwritten by loadSettings)
+  ...SETTINGS_DEFAULTS,
 };
 
 // ══════════════════════════════════════════════════════════════════
 // STORAGE — localStorage helpers
 // ══════════════════════════════════════════════════════════════════
+
 const STORAGE_KEYS = {
-  settings:  'lumen_settings',
-  mcpTools:  'lumen_mcp_tools',
-  models:    'lumen_models',
-  lastConv:  'lumen_last_conv',
+  settings: 'lumen_settings',
+  mcpTools: 'lumen_mcp_tools',
+  models:   'lumen_models',
+  lastConv: 'lumen_last_conv',
 };
 
 const storage = {
-  get(key) {
-    try { return JSON.parse(localStorage.getItem(key)); } catch { return null; }
+  /** @returns {*} Parsed value, or `defaultValue` if missing/invalid. */
+  get(key, defaultValue = null) {
+    try { return JSON.parse(localStorage.getItem(key)) ?? defaultValue; } catch { return defaultValue; }
   },
   set(key, value) {
     try { localStorage.setItem(key, JSON.stringify(value)); } catch {}
@@ -703,32 +699,29 @@ const storage = {
 // ══════════════════════════════════════════════════════════════════
 // API — fetch wrappers
 // ══════════════════════════════════════════════════════════════════
+
 const api = {
   async get(url) {
-    const res = await fetch(url);
-    return res.json();
+    return (await fetch(url)).json();
   },
   async post(url, body) {
-    const res = await fetch(url, {
+    return (await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
-    });
-    return res.json();
+    })).json();
   },
   async put(url, body) {
-    const res = await fetch(url, {
+    return (await fetch(url, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
-    });
-    return res.json();
+    })).json();
   },
   async delete(url) {
-    const res = await fetch(url, { method: 'DELETE' });
-    return res.json();
+    return (await fetch(url, { method: 'DELETE' })).json();
   },
-  /** Returns a ReadableStream for SSE responses. */
+  /** Returns the raw fetch Response for SSE streaming. */
   stream(url, body) {
     return fetch(url, {
       method: 'POST',
@@ -741,6 +734,7 @@ const api = {
 // ══════════════════════════════════════════════════════════════════
 // MARKDOWN + LATEX RENDERER
 // ══════════════════════════════════════════════════════════════════
+
 marked.setOptions({ breaks: true, gfm: true });
 
 const DOMPURIFY_CONFIG = {
@@ -748,19 +742,23 @@ const DOMPURIFY_CONFIG = {
   ADD_ATTR: ['class','style','xmlns','viewBox','d','fill','stroke','href','xlink:href','width','height','aria-hidden'],
 };
 
+/**
+ * Converts a markdown + LaTeX string into sanitized HTML.
+ * LaTeX blocks ($…$ and $$…$$) are stashed before Markdown parsing
+ * to prevent the parser from mangling math symbols, then restored
+ * and rendered with KaTeX.
+ */
 function renderMarkdown(text) {
-  // Protect LaTeX from being mangled by the Markdown parser.
-  // Use ASCII control characters (\x02 / \x03) as delimiters — marked will
-  // never treat them as emphasis or any other markdown construct.
   const latexBlocks = [];
-  const placeholder = (block) => {
+  const stash = (block) => {
     latexBlocks.push(block);
     return `\x02LATEX${latexBlocks.length - 1}\x03`;
   };
 
+  // Stash display ($$) blocks before inline ($) to avoid double-matching
   const safeText = text
-    .replace(/\$\$[\s\S]+?\$\$/g, m => placeholder({ type: 'block',  src: m }))
-    .replace(/\$[^\$\n]+?\$/g,    m => placeholder({ type: 'inline', src: m }));
+    .replace(/\$\$[\s\S]+?\$\$/g, m => stash({ type: 'block',  src: m }))
+    .replace(/\$[^\$\n]+?\$/g,    m => stash({ type: 'inline', src: m }));
 
   let html = marked.parse(safeText);
 
@@ -777,6 +775,7 @@ function renderMarkdown(text) {
   return DOMPurify.sanitize(html, DOMPURIFY_CONFIG);
 }
 
+/** Renders markdown into `el` and attaches syntax-highlight + copy buttons. */
 function applyMarkdown(el, text) {
   el.innerHTML = renderMarkdown(text);
   el.querySelectorAll('pre code').forEach(block => {
@@ -796,23 +795,17 @@ function applyMarkdown(el, text) {
 // ══════════════════════════════════════════════════════════════════
 // SETTINGS (localStorage)
 // ══════════════════════════════════════════════════════════════════
-const SETTINGS_DEFAULTS = {
-  apiBase:      'https://api.openai.com/v1',
-  apiKey:       '',
-  model:        '',
-  systemPrompt: '',
-};
 
 function loadSettings() {
-  const saved = storage.get(STORAGE_KEYS.settings) || {};
+  const saved = storage.get(STORAGE_KEYS.settings, {});
   Object.assign(state, { ...SETTINGS_DEFAULTS, ...saved });
 
+  // Restore cached tool / model lists without a network round-trip
   const cachedTools  = storage.get(STORAGE_KEYS.mcpTools);
   const cachedModels = storage.get(STORAGE_KEYS.models);
   if (cachedTools)  state.mcpTools = cachedTools;
   if (cachedModels) renderModelList(cachedModels);
 
-  // Populate UI fields
   document.getElementById('api-base').value      = state.apiBase;
   document.getElementById('api-key').value       = state.apiKey;
   document.getElementById('system-prompt').value = state.systemPrompt;
@@ -841,6 +834,7 @@ function updateModelBadge() {
 // ══════════════════════════════════════════════════════════════════
 // CONVERSATIONS
 // ══════════════════════════════════════════════════════════════════
+
 async function loadConversationList() {
   const list = await api.get('/api/conversations');
   const container = document.getElementById('conv-list');
@@ -861,27 +855,30 @@ function buildConvItem(conv) {
     <button class="conv-del" title="Delete" data-id="${conv.id}">✕</button>
   `;
   item.addEventListener('click', e => {
-    if (e.target.classList.contains('conv-del')) return;
-    openConversation(conv.id);
+    if (!e.target.classList.contains('conv-del')) openConversation(conv.id);
   });
-  item.querySelector('.conv-del').addEventListener('click', async e => {
+  item.querySelector('.conv-del').addEventListener('click', e => {
     e.stopPropagation();
-    if (!confirm('Delete this conversation?')) return;
-    await api.delete(`/api/conversations/${conv.id}`);
-    if (state.convId === conv.id) {
-      state.convId = null;
-      state.messages = [];
-      clearMessages();
-    }
-    loadConversationList();
+    deleteConversation(conv.id);
   });
   return item;
 }
 
+async function deleteConversation(convId) {
+  if (!confirm('Delete this conversation?')) return;
+  await api.delete(`/api/conversations/${convId}`);
+  if (state.convId === convId) {
+    state.convId = null;
+    state.messages = [];
+    clearMessages();
+  }
+  loadConversationList();
+}
+
 async function openConversation(id) {
   const data = await api.get(`/api/conversations/${id}`);
-  state.convId    = id;
-  state.messages  = data.messages  || [];
+  state.convId     = id;
+  state.messages   = data.messages   || [];
   state.displayLog = data.displayLog || [];
   storage.set(STORAGE_KEYS.lastConv, id);
   document.getElementById('chat-title-input').value = data.title || '';
@@ -892,8 +889,8 @@ async function openConversation(id) {
 
 async function createNewConversation() {
   const data = await api.post('/api/conversations', { title: 'New Conversation' });
-  state.convId    = data.id;
-  state.messages  = [];
+  state.convId     = data.id;
+  state.messages   = [];
   state.displayLog = [];
   storage.set(STORAGE_KEYS.lastConv, data.id);
   document.getElementById('chat-title-input').value = 'New Conversation';
@@ -916,13 +913,19 @@ async function persistConversation() {
 // ══════════════════════════════════════════════════════════════════
 // MESSAGE RENDERING
 // ══════════════════════════════════════════════════════════════════
-function clearMessages() {
-  document.getElementById('messages').innerHTML = `
+
+/** Returns the HTML string for the empty/welcome state placeholder. */
+function emptyStateHTML() {
+  return `
     <div id="empty-state">
       <div class="es-icon">✦</div>
       <div class="es-title">Start a conversation</div>
       <div class="es-sub">Type a message below.</div>
     </div>`;
+}
+
+function clearMessages() {
+  document.getElementById('messages').innerHTML = emptyStateHTML();
 }
 
 function removeEmptyState() {
@@ -942,9 +945,7 @@ function renderAllMessages() {
 }
 
 /**
- * Shared helper — builds the outer row + avatar + body shell used by all
- * message types (user, assistant, tool request, tool result).
- * Returns { row, body } so callers can append their own content into body.
+ * Builds the outer row + avatar + body shell shared by all message types.
  */
 function createMessageRow(avatarClass, avatarIcon, roleLabel) {
   removeEmptyState();
@@ -993,6 +994,7 @@ function appendMessage(role, content) {
   return contentEl;
 }
 
+/** Creates a streaming assistant message bubble with a blinking cursor. */
 function createStreamingMessage() {
   const { body } = createMessageRow('ai-av', '◈', 'Assistant');
   const contentEl = document.createElement('div');
@@ -1018,6 +1020,13 @@ function scrollToBottom() {
 // ══════════════════════════════════════════════════════════════════
 // TOOL CONFIRMATION UI
 // ══════════════════════════════════════════════════════════════════
+
+/**
+ * Renders an approval UI for each pending tool call and resolves with an
+ * array of booleans (true = approved, false = denied), in the same order.
+ * @param {Array} calls - Array of tool-call objects from the SSE stream.
+ * @returns {Promise<boolean[]>}
+ */
 function showToolConfirmation(calls) {
   return new Promise(resolve => {
     const { row, body } = createMessageRow('ai-av', '⚙', 'Tool Request');
@@ -1067,6 +1076,8 @@ function showToolConfirmation(calls) {
 // ══════════════════════════════════════════════════════════════════
 // CHAT — SEND
 // ══════════════════════════════════════════════════════════════════
+
+/** Formats the current MCP tools as an OpenAI function-calling payload. */
 function buildToolsPayload() {
   return state.mcpTools.map(tool => ({
     type: 'function',
@@ -1078,6 +1089,7 @@ function buildToolsPayload() {
   }));
 }
 
+/** Prepends the system prompt (if set) to the conversation message history. */
 function buildApiMessages() {
   const messages = [];
   if (state.systemPrompt) messages.push({ role: 'system', content: state.systemPrompt });
@@ -1085,14 +1097,19 @@ function buildApiMessages() {
   return messages;
 }
 
+/** Toggles the streaming lock and send-button disabled state together. */
+function setStreaming(active) {
+  state.isStreaming = active;
+  document.getElementById('send-btn').disabled = active;
+}
+
 async function sendMessage(userText) {
   if (!userText.trim() || state.isStreaming) return;
   if (!state.convId) await createNewConversation();
 
-  state.isStreaming = true;
-  document.getElementById('send-btn').disabled = true;
+  setStreaming(true);
 
-  // Auto-title on first message
+  // Auto-title from the first message
   if (state.messages.length === 0) {
     document.getElementById('chat-title-input').value =
       userText.slice(0, 40) + (userText.length > 40 ? '…' : '');
@@ -1103,12 +1120,14 @@ async function sendMessage(userText) {
   appendMessage('user', userText);
 
   await runChatLoop();
-
   await persistConversation();
-  state.isStreaming = false;
-  document.getElementById('send-btn').disabled = false;
+  setStreaming(false);
 }
 
+/**
+ * Runs one turn of the chat loop: streams a completion, handles tool calls
+ * (recursively continuing the loop after tool results), and updates state.
+ */
 async function runChatLoop() {
   const tools     = buildToolsPayload();
   const contentEl = createStreamingMessage();
@@ -1128,13 +1147,14 @@ async function runChatLoop() {
     const decoder = new TextDecoder();
     let buffer    = '';
 
+    // Read the SSE stream line-by-line, accumulating text and tool-call deltas
     while (true) {
       const { done, value } = await reader.read();
       if (done) break;
 
       buffer += decoder.decode(value, { stream: true });
       const lines = buffer.split('\n');
-      buffer = lines.pop(); // keep incomplete last line
+      buffer = lines.pop(); // retain any incomplete trailing line
 
       for (const line of lines) {
         if (!line.startsWith('data: ')) continue;
@@ -1202,7 +1222,7 @@ async function handleToolCalls(toolCalls, precedingText) {
     state.messages.push({ role: 'tool', tool_call_id: tc.id, content: result });
   }
 
-  // Let the model respond to tool results
+  // Give the model a chance to respond to the tool results
   await runChatLoop();
 }
 
@@ -1215,8 +1235,8 @@ async function executeTool(tc) {
 
   try {
     const data = await api.post('/api/mcp/call', {
-      server: toolDef.server,
-      tool: tc.function.name,
+      server:    toolDef.server,
+      tool:      tc.function.name,
       arguments: args,
     });
     return data.result || data.error || '';
@@ -1228,6 +1248,7 @@ async function executeTool(tc) {
 // ══════════════════════════════════════════════════════════════════
 // MCP
 // ══════════════════════════════════════════════════════════════════
+
 async function loadMcpConfig() {
   const cfg = await api.get('/api/mcp/config');
   document.getElementById('mcp-config-editor').value = JSON.stringify(cfg, null, 2);
@@ -1275,6 +1296,7 @@ function renderToolList() {
 // ══════════════════════════════════════════════════════════════════
 // MODEL FETCH
 // ══════════════════════════════════════════════════════════════════
+
 async function fetchModels() {
   const apiBase = document.getElementById('api-base').value.trim();
   const apiKey  = document.getElementById('api-key').value.trim();
@@ -1309,11 +1331,13 @@ function renderModelList(models) {
 // ══════════════════════════════════════════════════════════════════
 // UI HELPERS
 // ══════════════════════════════════════════════════════════════════
+
 function switchTab(tab) {
   document.querySelectorAll('.sidebar-tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
   document.querySelectorAll('.panel').forEach(p => p.classList.toggle('active', p.id === `${tab}-panel`));
 }
 
+/** Shows a timed status message inside a status element. */
 function showStatus(elementId, message, type) {
   const el = document.getElementById(elementId);
   el.textContent = message;
@@ -1330,14 +1354,6 @@ function escapeHtml(str) {
     .replace(/"/g, '&quot;');
 }
 
-function toast(message) {
-  const el = document.createElement('div');
-  el.className = 'toast';
-  el.textContent = message;
-  document.getElementById('toast-container').appendChild(el);
-  setTimeout(() => el.remove(), 3000);
-}
-
 function autoResize(el) {
   el.style.height = 'auto';
   el.style.height = Math.min(el.scrollHeight, 180) + 'px';
@@ -1346,6 +1362,7 @@ function autoResize(el) {
 // ══════════════════════════════════════════════════════════════════
 // EVENT BINDINGS
 // ══════════════════════════════════════════════════════════════════
+
 function bindEvents() {
   // Sidebar
   document.getElementById('btn-new-chat').addEventListener('click', createNewConversation);
@@ -1355,20 +1372,18 @@ function bindEvents() {
 
   // Chat input
   const userInput = document.getElementById('user-input');
-  const sendBtn   = document.getElementById('send-btn');
-
   const submitInput = () => {
     const text = userInput.value.trim();
     if (text) { userInput.value = ''; autoResize(userInput); sendMessage(text); }
   };
 
-  sendBtn.addEventListener('click', submitInput);
+  document.getElementById('send-btn').addEventListener('click', submitInput);
   userInput.addEventListener('input', () => autoResize(userInput));
   userInput.addEventListener('keydown', e => {
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); submitInput(); }
   });
 
-  // Chat title
+  // Chat title auto-save
   document.getElementById('chat-title-input').addEventListener('change', persistConversation);
 
   // Settings
@@ -1383,10 +1398,11 @@ function bindEvents() {
 // ══════════════════════════════════════════════════════════════════
 // INIT
 // ══════════════════════════════════════════════════════════════════
+
 (async () => {
   bindEvents();
   loadSettings();
-  renderToolList();  // show cached tools immediately
+  renderToolList();         // show cached tools immediately
   await loadConversationList();
   await loadMcpConfig();
 

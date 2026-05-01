@@ -26,6 +26,30 @@ CONVERSATIONS_DIR.mkdir(exist_ok=True)
 
 MCP_CONFIG_FILE = Path("mcp.json")
 
+# ── Request helpers ───────────────────────────────────────────────────────────
+
+def _request_body() -> dict:
+    """Return the parsed JSON body from the current request, or an empty dict."""
+    return request.get_json(silent=True) or {}
+
+
+def _openai_client_from_body(body: dict) -> OpenAI:
+    """Build an OpenAI client from api_key / api_base fields in a request body."""
+    return OpenAI(
+        api_key=body.get("api_key") or "sk-placeholder",
+        base_url=body.get("api_base") or "https://api.openai.com/v1",
+    )
+
+
+def _streaming_response(generator: Generator) -> Response:
+    """Wrap a generator in a Server-Sent Events streaming response."""
+    return Response(
+        stream_with_context(generator),
+        mimetype="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+    )
+
+
 # ── MCP helpers ───────────────────────────────────────────────────────────────
 
 def load_mcp_config() -> dict:
@@ -38,6 +62,11 @@ def load_mcp_config() -> dict:
 def save_mcp_config(config: dict) -> None:
     """Persist MCP server configuration to disk."""
     MCP_CONFIG_FILE.write_text(json.dumps(config, indent=2))
+
+
+def _find_mcp_server(server_name: str) -> dict | None:
+    """Look up a single MCP server config by name, or return None if not found."""
+    return load_mcp_config().get("mcpServers", {}).get(server_name)
 
 
 def _build_server_params(server_config: dict) -> Any:
@@ -98,15 +127,13 @@ async def invoke_mcp_tool(
 
 
 def run_async(coro) -> Any:
-    """Run an async coroutine safely from a synchronous (Flask) context."""
-    try:
-        loop = asyncio.get_event_loop()
-        if loop.is_running():
-            with ThreadPoolExecutor(max_workers=1) as pool:
-                return pool.submit(asyncio.run, coro).result()
-        return loop.run_until_complete(coro)
-    except RuntimeError:
-        return asyncio.run(coro)
+    """Run an async coroutine safely from a synchronous (Flask) context.
+
+    Always executes in a dedicated thread to avoid conflicts with any
+    existing event loop (e.g. Flask's dev-server reloader).
+    """
+    with ThreadPoolExecutor(max_workers=1) as pool:
+        return pool.submit(asyncio.run, coro).result()
 
 
 # ── Conversation store ────────────────────────────────────────────────────────
@@ -167,15 +194,6 @@ def create_conversation(title: str = "New Conversation") -> dict:
         "created_at": datetime.now(timezone.utc).isoformat(),
     }
     return save_conversation(conv_id, data)
-
-
-# ── OpenAI client factory ─────────────────────────────────────────────────────
-
-def build_openai_client(api_key: str, api_base: str) -> OpenAI:
-    return OpenAI(
-        api_key=api_key or "sk-placeholder",
-        base_url=api_base or "https://api.openai.com/v1",
-    )
 
 
 # ── SSE streaming ─────────────────────────────────────────────────────────────
@@ -258,7 +276,7 @@ def api_list_conversations():
 
 @app.route("/api/conversations", methods=["POST"])
 def api_create_conversation():
-    title = (request.json or {}).get("title", "New Conversation")
+    title = _request_body().get("title", "New Conversation")
     return jsonify(create_conversation(title)), 201
 
 
@@ -273,7 +291,7 @@ def api_get_conversation(conv_id: str):
 @app.route("/api/conversations/<conv_id>", methods=["PUT"])
 def api_update_conversation(conv_id: str):
     data = load_conversation(conv_id) or {"id": conv_id}
-    data.update(request.json or {})
+    data.update(_request_body())
     data["id"] = conv_id  # guard against accidental id override
     return jsonify(save_conversation(conv_id, data))
 
@@ -294,7 +312,7 @@ def api_get_mcp_config():
 
 @app.route("/api/mcp/config", methods=["POST"])
 def api_save_mcp_config():
-    save_mcp_config(request.json)
+    save_mcp_config(_request_body())
     return jsonify({"ok": True})
 
 
@@ -309,12 +327,12 @@ def api_list_mcp_tools():
 
 @app.route("/api/mcp/call", methods=["POST"])
 def api_call_mcp_tool():
-    body = request.json or {}
+    body = _request_body()
     server_name: str = body.get("server", "")
     tool_name: str = body.get("tool", "")
     arguments: dict = body.get("arguments", {})
 
-    server_config = load_mcp_config().get("mcpServers", {}).get(server_name)
+    server_config = _find_mcp_server(server_name)
     if not server_config:
         return jsonify({"error": f"MCP server '{server_name}' not found"}), 404
 
@@ -326,16 +344,14 @@ def api_call_mcp_tool():
 
 @app.route("/api/chat/stream", methods=["POST"])
 def api_chat_stream():
-    body = request.json or {}
-    client = build_openai_client(body.get("api_key", ""), body.get("api_base", ""))
+    body = _request_body()
+    client = _openai_client_from_body(body)
     model: str = body.get("model", "gpt-4o")
     messages: list = body.get("messages", [])
     tools: list = body.get("tools", [])
 
-    return Response(
-        stream_with_context(stream_chat_completion(client, model, messages, tools)),
-        mimetype="text/event-stream",
-        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+    return _streaming_response(
+        stream_chat_completion(client, model, messages, tools)
     )
 
 
@@ -343,8 +359,8 @@ def api_chat_stream():
 
 @app.route("/api/models", methods=["POST"])
 def api_fetch_models():
-    body = request.json or {}
-    client = build_openai_client(body.get("api_key", ""), body.get("api_base", ""))
+    body = _request_body()
+    client = _openai_client_from_body(body)
     try:
         model_ids = sorted(m.id for m in client.models.list())
         return jsonify({"models": model_ids})
@@ -353,4 +369,4 @@ def api_fetch_models():
 
 
 if __name__ == "__main__":
-    app.run(debug=True, port=5000, threaded=True)
+    app.run(debug=True, port=8080, threaded=True)
