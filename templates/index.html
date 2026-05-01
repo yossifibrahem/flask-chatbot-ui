@@ -687,7 +687,6 @@ const STORAGE_KEYS = {
 };
 
 const storage = {
-  /** @returns {*} Parsed value, or `defaultValue` if missing/invalid. */
   get(key, defaultValue = null) {
     try { return JSON.parse(localStorage.getItem(key)) ?? defaultValue; } catch { return defaultValue; }
   },
@@ -721,7 +720,6 @@ const api = {
   async delete(url) {
     return (await fetch(url, { method: 'DELETE' })).json();
   },
-  /** Returns the raw fetch Response for SSE streaming. */
   stream(url, body) {
     return fetch(url, {
       method: 'POST',
@@ -742,12 +740,6 @@ const DOMPURIFY_CONFIG = {
   ADD_ATTR: ['class','style','xmlns','viewBox','d','fill','stroke','href','xlink:href','width','height','aria-hidden'],
 };
 
-/**
- * Converts a markdown + LaTeX string into sanitized HTML.
- * LaTeX blocks ($…$ and $$…$$) are stashed before Markdown parsing
- * to prevent the parser from mangling math symbols, then restored
- * and rendered with KaTeX.
- */
 function renderMarkdown(text) {
   const latexBlocks = [];
   const stash = (block) => {
@@ -775,7 +767,6 @@ function renderMarkdown(text) {
   return DOMPurify.sanitize(html, DOMPURIFY_CONFIG);
 }
 
-/** Renders markdown into `el` and attaches syntax-highlight + copy buttons. */
 function applyMarkdown(el, text) {
   el.innerHTML = renderMarkdown(text);
   el.querySelectorAll('pre code').forEach(block => {
@@ -914,7 +905,6 @@ async function persistConversation() {
 // MESSAGE RENDERING
 // ══════════════════════════════════════════════════════════════════
 
-/** Returns the HTML string for the empty/welcome state placeholder. */
 function emptyStateHTML() {
   return `
     <div id="empty-state">
@@ -944,9 +934,6 @@ function renderAllMessages() {
   scrollToBottom();
 }
 
-/**
- * Builds the outer row + avatar + body shell shared by all message types.
- */
 function createMessageRow(avatarClass, avatarIcon, roleLabel) {
   removeEmptyState();
   const row = document.createElement('div');
@@ -994,7 +981,6 @@ function appendMessage(role, content) {
   return contentEl;
 }
 
-/** Creates a streaming assistant message bubble with a blinking cursor. */
 function createStreamingMessage() {
   const { body } = createMessageRow('ai-av', '◈', 'Assistant');
   const contentEl = document.createElement('div');
@@ -1021,12 +1007,6 @@ function scrollToBottom() {
 // TOOL CONFIRMATION UI
 // ══════════════════════════════════════════════════════════════════
 
-/**
- * Renders an approval UI for each pending tool call and resolves with an
- * array of booleans (true = approved, false = denied), in the same order.
- * @param {Array} calls - Array of tool-call objects from the SSE stream.
- * @returns {Promise<boolean[]>}
- */
 function showToolConfirmation(calls) {
   return new Promise(resolve => {
     const { row, body } = createMessageRow('ai-av', '⚙', 'Tool Request');
@@ -1077,7 +1057,6 @@ function showToolConfirmation(calls) {
 // CHAT — SEND
 // ══════════════════════════════════════════════════════════════════
 
-/** Formats the current MCP tools as an OpenAI function-calling payload. */
 function buildToolsPayload() {
   return state.mcpTools.map(tool => ({
     type: 'function',
@@ -1089,7 +1068,6 @@ function buildToolsPayload() {
   }));
 }
 
-/** Prepends the system prompt (if set) to the conversation message history. */
 function buildApiMessages() {
   const messages = [];
   if (state.systemPrompt) messages.push({ role: 'system', content: state.systemPrompt });
@@ -1097,7 +1075,6 @@ function buildApiMessages() {
   return messages;
 }
 
-/** Toggles the streaming lock and send-button disabled state together. */
 function setStreaming(active) {
   state.isStreaming = active;
   document.getElementById('send-btn').disabled = active;
@@ -1124,10 +1101,6 @@ async function sendMessage(userText) {
   setStreaming(false);
 }
 
-/**
- * Runs one turn of the chat loop: streams a completion, handles tool calls
- * (recursively continuing the loop after tool results), and updates state.
- */
 async function runChatLoop() {
   const tools     = buildToolsPayload();
   const contentEl = createStreamingMessage();
@@ -1337,7 +1310,6 @@ function switchTab(tab) {
   document.querySelectorAll('.panel').forEach(p => p.classList.toggle('active', p.id === `${tab}-panel`));
 }
 
-/** Shows a timed status message inside a status element. */
 function showStatus(elementId, message, type) {
   const el = document.getElementById(elementId);
   el.textContent = message;
