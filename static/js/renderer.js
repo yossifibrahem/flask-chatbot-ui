@@ -16,6 +16,7 @@ const ICONS = {
   copy:         `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>`,
   chevronRight: `<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>`,
   chevronDown:  `<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>`,
+  brain:        `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.5 2a2.5 2.5 0 0 1 5 0v.5a5 5 0 0 1 5 5v8a5 5 0 0 1-5 5h-5a5 5 0 0 1-5-5v-8a5 5 0 0 1 5-5V2z"/><path d="M9 13h6M9 9h6M9 17h3"/></svg>`,
 };
 
 // ── Utilities ─────────────────────────────────────────────────────────────────
@@ -107,6 +108,108 @@ function addCopyFooter(row, getText) {
   row.appendChild(footer);
 }
 
+// ── Thinking / Reasoning block ────────────────────────────────────────────────
+
+/**
+ * Creates a collapsible "Thinking…" block inside the current assistant row.
+ * Returns the <pre> element that streaming text should be written into.
+ */
+export function createThinkingBlock() {
+  const row = getOrCreateAssistantRow();
+  row.querySelector('.msg-footer')?.remove();
+
+  const block = document.createElement('div');
+  block.className = 'thinking-block thinking-streaming';
+  block.innerHTML = `
+    <button class="thinking-header">
+      <span class="thinking-chevron">${ICONS.chevronDown}</span>
+      <span class="thinking-icon">${ICONS.brain}</span>
+      <span class="thinking-label">Thinking…</span>
+      <span class="thinking-pulse"></span>
+    </button>
+    <pre class="thinking-body"></pre>`;
+
+  const btn  = block.querySelector('.thinking-header');
+  const body = block.querySelector('.thinking-body');
+  const chev = block.querySelector('.thinking-chevron');
+
+  btn.addEventListener('click', () => {
+    const open = block.classList.toggle('open');
+    // When manually toggled during streaming keep it open; override closed
+    block.dataset.manualToggle = '1';
+    chev.innerHTML = open ? ICONS.chevronDown : ICONS.chevronRight;
+    body.style.display = open ? 'block' : 'none';
+    if (open) scrollToBottom();
+  });
+
+  // Default: expanded while streaming
+  block.classList.add('open');
+  body.style.display = 'block';
+
+  row.appendChild(block);
+  scrollToBottom();
+  return body;
+}
+
+/** Append a chunk of reasoning text to the streaming thinking body. */
+export function updateThinkingBlock(bodyEl, text) {
+  bodyEl.textContent = text;
+  scrollToBottom();
+}
+
+/**
+ * Called once reasoning is complete — removes pulse, updates label,
+ * and collapses the block.
+ */
+export function finalizeThinkingBlock(bodyEl, fullText) {
+  const block = bodyEl.closest('.thinking-block');
+  if (!block) return;
+  block.classList.remove('thinking-streaming');
+  block.querySelector('.thinking-label').textContent = 'Thought process';
+  block.querySelector('.thinking-pulse')?.remove();
+  bodyEl.textContent = fullText;
+
+  // Auto-collapse after streaming unless the user manually toggled it
+  if (!block.dataset.manualToggle) {
+    block.classList.remove('open');
+    block.querySelector('.thinking-chevron').innerHTML = ICONS.chevronRight;
+    bodyEl.style.display = 'none';
+  }
+}
+
+/**
+ * Renders a static (already-complete) thinking block from the display log.
+ */
+export function appendThinkingBlock(reasoningText) {
+  if (!reasoningText) return;
+  const row = getOrCreateAssistantRow();
+  row.querySelector('.msg-footer')?.remove();
+
+  const block = document.createElement('div');
+  block.className = 'thinking-block';
+  block.innerHTML = `
+    <button class="thinking-header">
+      <span class="thinking-chevron">${ICONS.chevronRight}</span>
+      <span class="thinking-icon">${ICONS.brain}</span>
+      <span class="thinking-label">Thought process</span>
+    </button>
+    <pre class="thinking-body" style="display:none">${escapeHtml(reasoningText)}</pre>`;
+
+  const btn  = block.querySelector('.thinking-header');
+  const body = block.querySelector('.thinking-body');
+  const chev = block.querySelector('.thinking-chevron');
+
+  btn.addEventListener('click', () => {
+    const open = block.classList.toggle('open');
+    chev.innerHTML = open ? ICONS.chevronDown : ICONS.chevronRight;
+    body.style.display = open ? 'block' : 'none';
+    if (open) scrollToBottom();
+  });
+
+  row.appendChild(block);
+  scrollToBottom();
+}
+
 // ── Public renderers ──────────────────────────────────────────────────────────
 
 export function appendMessage(role, content) {
@@ -195,6 +298,7 @@ export function renderAllMessages(displayLog) {
   displayLog.forEach(entry => {
     if (entry.type === 'message')     appendMessage(entry.role, entry.content);
     if (entry.type === 'tool_result') appendToolResult(entry.name, entry.result);
+    if (entry.type === 'thinking')    appendThinkingBlock(entry.content);
   });
   scrollToBottom();
 }

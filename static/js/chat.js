@@ -5,6 +5,7 @@ import { state } from './state.js';
 import {
   createStreamingMessage, appendMessage, appendToolResult,
   showToolConfirmation, finalizeStreamingMessage, escapeHtml, scrollToBottom,
+  createThinkingBlock, updateThinkingBlock, finalizeThinkingBlock,
 } from './renderer.js';
 import { applyMarkdown } from './markdown.js';
 import { executeTool }   from './mcp.js';
@@ -64,11 +65,21 @@ export async function sendMessage(userText) {
 // ── SSE loop ──────────────────────────────────────────────────────────────────
 
 async function runChatLoop() {
-  const contentEl = createStreamingMessage();
-  let accText     = '';
-  let toolCalls   = null;
+  // contentEl is created lazily on the first text chunk so that if reasoning
+  // arrives first, the thinking block is inserted into the DOM before it.
+  let contentEl    = null;
+  let accText      = '';
+  let accReasoning = '';
+  let reasoningBodyEl = null;
+  let toolCalls    = null;
 
   state.streamId = crypto.randomUUID();
+
+  // Helper: get-or-create the content element (always after any thinking block).
+  const getContentEl = () => {
+    if (!contentEl) contentEl = createStreamingMessage();
+    return contentEl;
+  };
 
   try {
     const resp    = await api.stream('/api/chat/stream', {
@@ -99,39 +110,54 @@ async function runChatLoop() {
 
         try {
           const evt = JSON.parse(raw);
-          if (evt.type === 'text') {
+          if (evt.type === 'reasoning') {
+            accReasoning += evt.content;
+            if (!reasoningBodyEl) reasoningBodyEl = createThinkingBlock();
+            updateThinkingBlock(reasoningBodyEl, accReasoning);
+          } else if (evt.type === 'text') {
             accText += evt.content;
-            contentEl.classList.add('cursor-blink');
-            applyMarkdown(contentEl, accText);
+            const el = getContentEl();
+            el.classList.add('cursor-blink');
+            applyMarkdown(el, accText);
             scrollToBottom();
           } else if (evt.type === 'tool_calls') {
             toolCalls = evt.calls;
           } else if (evt.type === 'error') {
-            contentEl.classList.remove('cursor-blink');
-            contentEl.innerHTML = `<span style="color:var(--red)">Error: ${escapeHtml(evt.message)}</span>`;
+            const el = getContentEl();
+            el.classList.remove('cursor-blink');
+            el.innerHTML = `<span style="color:var(--red)">Error: ${escapeHtml(evt.message)}</span>`;
             return;
           }
         } catch { /* Malformed SSE line — skip */ }
       }
     }
 
-    finalizeStreamingMessage(contentEl, accText);
+    // Finalize the thinking block first (collapse + remove pulse), then text.
+    if (reasoningBodyEl) finalizeThinkingBlock(reasoningBodyEl, accReasoning);
+    if (contentEl) finalizeStreamingMessage(contentEl, accText);
 
     if (toolCalls?.length > 0) {
-      await handleToolCalls(toolCalls, accText);
+      await handleToolCalls(toolCalls, accText, accReasoning);
     } else if (accText) {
+      if (accReasoning) {
+        state.displayLog.push({ type: 'thinking', content: accReasoning });
+      }
       state.messages.push({ role: 'assistant', content: accText });
       state.displayLog.push({ type: 'message', role: 'assistant', content: accText });
     }
   } catch (err) {
-    contentEl.classList.remove('cursor-blink');
-    contentEl.innerHTML = `<span style="color:var(--red)">Network error: ${escapeHtml(err.message)}</span>`;
+    const el = getContentEl();
+    el.classList.remove('cursor-blink');
+    el.innerHTML = `<span style="color:var(--red)">Network error: ${escapeHtml(err.message)}</span>`;
   }
 }
 
 // ── Tool-call orchestration ───────────────────────────────────────────────────
 
-async function handleToolCalls(calls, precedingText) {
+async function handleToolCalls(calls, precedingText, precedingReasoning = '') {
+  if (precedingReasoning) {
+    state.displayLog.push({ type: 'thinking', content: precedingReasoning });
+  }
   if (precedingText) {
     state.displayLog.push({ type: 'message', role: 'assistant', content: precedingText });
   }

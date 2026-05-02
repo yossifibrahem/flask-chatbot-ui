@@ -63,6 +63,10 @@ def stream_chat_completion(
             if delta is None:
                 continue
 
+            reasoning = getattr(delta, 'reasoning_content', None)
+            if reasoning:
+                yield sse_event({"type": "reasoning", "content": reasoning})
+
             if delta.content:
                 yield sse_event({"type": "text", "content": delta.content})
 
