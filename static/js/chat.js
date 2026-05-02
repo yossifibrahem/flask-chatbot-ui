@@ -8,20 +8,22 @@ import {
   createThinkingBlock, updateThinkingBlock, finalizeThinkingBlock,
 } from './renderer.js';
 import { applyMarkdown } from './markdown.js';
-import { executeTool }   from './mcp.js';
+import { executeTool, isServerEnabled, isServerAutoApprove } from './mcp.js';
 import { persistConversation, createNewConversation } from './conversations.js';
 
 // ── Payload builders ──────────────────────────────────────────────────────────
 
 function buildToolsPayload() {
-  return state.mcpTools.map(tool => ({
-    type: 'function',
-    function: {
-      name:        tool.name,
-      description: tool.description,
-      parameters:  tool.inputSchema || { type: 'object', properties: {} },
-    },
-  }));
+  return state.mcpTools
+    .filter(tool => isServerEnabled(tool.server))
+    .map(tool => ({
+      type: 'function',
+      function: {
+        name:        tool.name,
+        description: tool.description,
+        parameters:  tool.inputSchema || { type: 'object', properties: {} },
+      },
+    }));
 }
 
 function buildApiMessages() {
@@ -171,11 +173,25 @@ async function handleToolCalls(calls, precedingText, precedingReasoning = '') {
     })),
   });
 
-  const decisions = await showToolConfirmation(calls);
+  // Determine which calls need user confirmation vs. are auto-approved
+  const autoApprovedFlags = calls.map(tc => {
+    const toolDef = state.mcpTools.find(t => t.name === tc.function.name);
+    return !!(toolDef && isServerAutoApprove(toolDef.server));
+  });
+  const needsConfirmation = autoApprovedFlags.some(a => !a);
+
+  let decisions;
+  if (needsConfirmation) {
+    // Only ask about the non-auto-approved calls; auto-approved ones resolve true
+    decisions = await showToolConfirmation(calls);
+    decisions = decisions.map((d, i) => autoApprovedFlags[i] ? true : d);
+  } else {
+    decisions = new Array(calls.length).fill(true);
+  }
 
   for (let i = 0; i < calls.length; i++) {
-    const tc     = calls[i];
-    let   args   = {};
+    const tc   = calls[i];
+    let   args = {};
     try { args = JSON.parse(tc.function.arguments || '{}'); } catch {}
     const result = decisions[i] ? await executeTool(tc) : 'Tool execution denied by user.';
     appendToolResult(tc.function.name, args, result);

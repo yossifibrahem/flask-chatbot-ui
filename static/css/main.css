@@ -962,3 +962,113 @@ body::before {
   .es-prompts { grid-template-columns: 1fr; }
   .modal { max-width: 100%; max-height: 95vh; }
 }
+/* ─── MCP Server Groups & Toggle Switches ───────────────────────────────────── */
+
+.server-group {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  margin-bottom: 10px;
+  overflow: hidden;
+  transition: opacity .2s;
+}
+.server-group.server-disabled {
+  opacity: .5;
+}
+.server-group.server-disabled .server-tools {
+  display: none;
+}
+
+.server-group-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 13px;
+  background: var(--surface3);
+  border-bottom: 1px solid var(--border);
+  flex-wrap: wrap;
+}
+
+.server-group-name {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: .8rem;
+  font-weight: 500;
+  color: var(--accent);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.server-group-controls {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-shrink: 0;
+}
+
+.mcp-toggle-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.mcp-toggle-text {
+  font-size: .7rem;
+  color: var(--text3);
+  white-space: nowrap;
+}
+
+/* The pill track */
+.mcp-toggle {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  width: 34px;
+  height: 19px;
+  border-radius: 10px;
+  border: none;
+  background: var(--surface3);
+  outline: 1px solid var(--border);
+  cursor: pointer;
+  padding: 0;
+  transition: background .2s, outline-color .2s;
+  flex-shrink: 0;
+}
+.mcp-toggle:hover { outline-color: var(--accent); }
+
+.mcp-toggle.mcp-toggle-on {
+  background: var(--accent);
+  outline-color: transparent;
+}
+
+/* The thumb */
+.mcp-toggle-thumb {
+  position: absolute;
+  left: 3px;
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  background: var(--text3);
+  transition: left .2s, background .2s;
+  pointer-events: none;
+}
+.mcp-toggle.mcp-toggle-on .mcp-toggle-thumb {
+  left: 18px;
+  background: var(--bg);
+}
+
+.server-tools {
+  padding: 8px 10px 4px;
+}
+
+/* Inside a server group, tool cards get a slightly different look */
+.server-group .tool-card {
+  background: var(--surface1, var(--bg));
+  border-color: var(--border);
+  margin-bottom: 5px;
+}
+.server-group .tool-card:last-child { margin-bottom: 4px; }

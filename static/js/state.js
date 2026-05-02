@@ -7,20 +7,23 @@ export const SETTINGS_DEFAULTS = {
 };
 
 export const STORAGE_KEYS = {
-  settings: 'lumen_settings',
-  mcpTools: 'lumen_mcp_tools',
-  models:   'lumen_models',
-  lastConv: 'lumen_last_conv',
-  sidebar:  'lumen_sidebar',
+  settings:          'lumen_settings',
+  mcpTools:          'lumen_mcp_tools',
+  mcpServerSettings: 'lumen_mcp_server_settings',
+  models:            'lumen_models',
+  lastConv:          'lumen_last_conv',
+  sidebar:           'lumen_sidebar',
 };
 
 // Single mutable state object shared across all modules.
 export const state = {
-  convId:      null,
-  messages:    [],   // OpenAI API message history
-  displayLog:  [],   // Serialisable render log (messages + tool results)
-  mcpTools:    [],
-  isStreaming: false,
-  streamId:    null,
+  convId:            null,
+  messages:          [],   // OpenAI API message history
+  displayLog:        [],   // Serialisable render log (messages + tool results)
+  mcpTools:          [],
+  // Per-server settings: { [serverName]: { enabled: bool, autoApprove: bool } }
+  mcpServerSettings: {},
+  isStreaming:       false,
+  streamId:          null,
   ...SETTINGS_DEFAULTS,
 };
