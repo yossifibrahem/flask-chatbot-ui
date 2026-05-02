@@ -24,12 +24,10 @@ function getServerSetting(serverName) {
   return state.mcpServerSettings[serverName];
 }
 
-/** Returns true if the server is enabled (tools should be sent to the model). */
 export function isServerEnabled(serverName) {
   return getServerSetting(serverName).enabled !== false;
 }
 
-/** Returns true if tool calls from this server should be auto-approved. */
 export function isServerAutoApprove(serverName) {
   return getServerSetting(serverName).autoApprove === true;
 }
@@ -76,69 +74,70 @@ export async function reloadTools() {
   }
 }
 
-// ── Render ────────────────────────────────────────────────────────────────────
+// ── Render helpers ────────────────────────────────────────────────────────────
+
+function buildToggleHtml(server, action, label, isOn) {
+  const onCls = isOn ? 'mcp-toggle-on' : '';
+  return `
+    <label class="mcp-toggle-label" title="${label}">
+      <span class="mcp-toggle-text">${label.split(' ')[0]}</span>
+      <button class="mcp-toggle ${onCls}"
+              data-server="${escapeHtml(server)}" data-action="${action}"
+              aria-pressed="${isOn}" aria-label="Toggle ${action}">
+        <span class="mcp-toggle-thumb"></span>
+      </button>
+    </label>`;
+}
+
+function buildServerGroupHtml(server, tools, settings) {
+  const disabledCls = settings.enabled ? '' : ' server-disabled';
+  const toolsHtml   = tools.map(tool => `
+    <div class="tool-card">
+      <div class="tool-card-header">
+        <span class="tool-card-name">${escapeHtml(tool.name)}</span>
+      </div>
+      <div class="tool-card-desc">${escapeHtml(tool.description)}</div>
+    </div>`).join('');
+
+  return `
+    <div class="server-group${disabledCls}" data-server="${escapeHtml(server)}">
+      <div class="server-group-header">
+        <span class="server-group-name">${escapeHtml(server)}</span>
+        <div class="server-group-controls">
+          ${buildToggleHtml(server, 'enabled',     'Enable / disable all tools from this server', settings.enabled)}
+          ${buildToggleHtml(server, 'autoApprove', 'Auto-approve tool calls from this server without confirmation', settings.autoApprove)}
+        </div>
+      </div>
+      <div class="server-tools">${toolsHtml}</div>
+    </div>`;
+}
+
+function groupToolsByServer(tools) {
+  return tools.reduce((acc, tool) => {
+    if (!acc[tool.server]) acc[tool.server] = [];
+    acc[tool.server].push(tool);
+    return acc;
+  }, {});
+}
 
 export function renderToolList() {
   loadServerSettings();
   const container = document.getElementById('tool-list');
+
   if (!state.mcpTools.length) {
     container.innerHTML = '<div class="no-tools-label">No tools loaded — click Reload Tools</div>';
     return;
   }
 
-  // Group tools by server name
-  const byServer = {};
-  for (const tool of state.mcpTools) {
-    if (!byServer[tool.server]) byServer[tool.server] = [];
-    byServer[tool.server].push(tool);
-  }
+  const byServer = groupToolsByServer(state.mcpTools);
+  container.innerHTML = Object.entries(byServer)
+    .map(([server, tools]) => buildServerGroupHtml(server, tools, getServerSetting(server)))
+    .join('');
 
-  container.innerHTML = Object.entries(byServer).map(([server, tools]) => {
-    const s           = getServerSetting(server);
-    const enabledCls  = s.enabled     ? 'mcp-toggle-on' : '';
-    const approveCls  = s.autoApprove ? 'mcp-toggle-on' : '';
-    const disabledCls = s.enabled     ? '' : ' server-disabled';
-
-    return `
-    <div class="server-group${disabledCls}" data-server="${escapeHtml(server)}">
-      <div class="server-group-header">
-        <span class="server-group-name">${escapeHtml(server)}</span>
-        <div class="server-group-controls">
-          <label class="mcp-toggle-label" title="Enable / disable all tools from this server">
-            <span class="mcp-toggle-text">Enabled</span>
-            <button class="mcp-toggle ${enabledCls}" data-server="${escapeHtml(server)}" data-action="enabled"
-                    aria-pressed="${s.enabled}" aria-label="Toggle server enabled">
-              <span class="mcp-toggle-thumb"></span>
-            </button>
-          </label>
-          <label class="mcp-toggle-label" title="Auto-approve tool calls from this server without confirmation">
-            <span class="mcp-toggle-text">Auto-approve</span>
-            <button class="mcp-toggle ${approveCls}" data-server="${escapeHtml(server)}" data-action="autoApprove"
-                    aria-pressed="${s.autoApprove}" aria-label="Toggle auto-approve">
-              <span class="mcp-toggle-thumb"></span>
-            </button>
-          </label>
-        </div>
-      </div>
-      <div class="server-tools">
-        ${tools.map(tool => `
-          <div class="tool-card">
-            <div class="tool-card-header">
-              <span class="tool-card-name">${escapeHtml(tool.name)}</span>
-            </div>
-            <div class="tool-card-desc">${escapeHtml(tool.description)}</div>
-          </div>`).join('')}
-      </div>
-    </div>`;
-  }).join('');
-
-  // Wire up toggle buttons
   container.querySelectorAll('.mcp-toggle').forEach(btn => {
     btn.addEventListener('click', () => {
-      const server  = btn.dataset.server;
-      const action  = btn.dataset.action;
-      const setting = getServerSetting(server);
-      setting[action] = !setting[action];
+      const setting = getServerSetting(btn.dataset.server);
+      setting[btn.dataset.action] = !setting[btn.dataset.action];
       saveServerSettings();
       renderToolList();
     });
@@ -150,10 +149,14 @@ export function renderToolList() {
 export async function executeTool(tc) {
   const toolDef = state.mcpTools.find(t => t.name === tc.function.name);
   if (!toolDef) return 'Tool not found in any MCP server.';
+
   let args = {};
   try { args = JSON.parse(tc.function.arguments || '{}'); } catch {}
+
   try {
-    const data = await api.post('/api/mcp/call', { server: toolDef.server, tool: tc.function.name, arguments: args });
+    const data = await api.post('/api/mcp/call', {
+      server: toolDef.server, tool: tc.function.name, arguments: args,
+    });
     return data.result || data.error || '';
   } catch (err) {
     return `Error: ${err.message}`;

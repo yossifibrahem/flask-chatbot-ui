@@ -31,45 +31,9 @@ function formatTime() {
   return new Date().toLocaleTimeString('en', { hour: '2-digit', minute: '2-digit' });
 }
 
-// ── Scroll intent tracking ────────────────────────────────────────────────────
-// Auto-scroll only when the user is already near the bottom.
-// Scrolling up opts out; scrolling back down opts back in.
-
-const SNAP_THRESHOLD = 60; // px from bottom = "close enough"
-let _userAtBottom = true;
-
-export function initScrollTracking() {
-  const el = document.getElementById('messages');
-  el.addEventListener('scroll', () => {
-    const dist = el.scrollHeight - el.scrollTop - el.clientHeight;
-    _userAtBottom = dist < SNAP_THRESHOLD;
-  }, { passive: true });
-}
-
-/** Auto-scroll only if the user hasn't scrolled away from the bottom. */
 export function scrollToBottom() {
-  if (!_userAtBottom) return;
   const el = document.getElementById('messages');
   requestAnimationFrame(() => { el.scrollTop = el.scrollHeight; });
-}
-
-/**
- * Force-scroll to bottom AND re-enable auto-scroll.
- * Use this when the user takes an action that should always snap to bottom
- * (e.g. sending a new message).
- */
-export function pinToBottom() {
-  _userAtBottom = true;
-  const el = document.getElementById('messages');
-  requestAnimationFrame(() => { el.scrollTop = el.scrollHeight; });
-}
-
-/**
- * When a collapsible block is opened, scroll just enough to reveal it
- * without jumping to the very bottom of the page.
- */
-function scrollBlockIntoView(el) {
-  requestAnimationFrame(() => el.scrollIntoView({ block: 'nearest', behavior: 'smooth' }));
 }
 
 // ── Empty state ───────────────────────────────────────────────────────────────
@@ -92,8 +56,6 @@ export function clearMessages() {
       <div class="es-prompts">${promptsHtml}</div>
     </div>`;
 }
-
-// ── Message row factory ───────────────────────────────────────────────────────
 
 function createMessageRow(avatarClass, avatarIcon, roleLabel) {
   document.getElementById('empty-state')?.remove();
@@ -175,7 +137,7 @@ export function createThinkingBlock() {
     block.dataset.manualToggle = '1';
     chev.innerHTML = open ? ICONS.chevronDown : ICONS.chevronRight;
     body.style.display = open ? 'block' : 'none';
-    if (open) scrollBlockIntoView(block);
+    if (open) scrollToBottom();
   });
 
   // Default: expanded while streaming
@@ -239,7 +201,7 @@ export function appendThinkingBlock(reasoningText) {
     const open = block.classList.toggle('open');
     chev.innerHTML = open ? ICONS.chevronDown : ICONS.chevronRight;
     body.style.display = open ? 'block' : 'none';
-    if (open) scrollBlockIntoView(block);
+    if (open) scrollToBottom();
   });
 
   row.appendChild(block);
@@ -341,7 +303,7 @@ export function appendToolResult(toolName, args, result) {
     const open = strip.classList.toggle('open');
     chev.innerHTML = open ? ICONS.chevronDown : ICONS.chevronRight;
     body.style.display = open ? 'block' : 'none';
-    if (open) scrollBlockIntoView(strip);
+    if (open) scrollToBottom();
   });
   row.appendChild(strip);
   scrollToBottom();
@@ -408,7 +370,7 @@ export function showToolConfirmation(calls) {
           const open = item.classList.toggle('open');
           chev.innerHTML = open ? ICONS.chevronDown : ICONS.chevronRight;
           pre.style.display = open ? 'block' : 'none';
-          if (open) scrollBlockIntoView(item);
+          if (open) scrollToBottom();
         });
       }
 

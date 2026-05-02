@@ -35,12 +35,6 @@ def _openai_client(body: dict) -> OpenAI:
     )
 
 
-def _register_cancel_event(stream_id: str) -> threading.Event:
-    event = threading.Event()
-    _cancel_events[stream_id] = event
-    return event
-
-
 # ── UI ────────────────────────────────────────────────────────────────────────
 
 @blueprint.route("/")
@@ -118,10 +112,12 @@ def call_mcp_tool():
 
 @blueprint.route("/api/chat/stream", methods=["POST"])
 def chat_stream():
-    body      = _body()
+    body = _body()
     client    = _openai_client(body)
     stream_id = body.get("stream_id") or str(uuid.uuid4())
-    cancel    = _register_cancel_event(stream_id)
+
+    cancel_event = threading.Event()
+    _cancel_events[stream_id] = cancel_event
 
     def generator_with_cleanup():
         try:
@@ -130,7 +126,7 @@ def chat_stream():
                 model=body.get("model", "gpt-4o"),
                 messages=body.get("messages", []),
                 tools=body.get("tools", []),
-                cancel_event=cancel,
+                cancel_event=cancel_event,
             )
         finally:
             _cancel_events.pop(stream_id, None)
