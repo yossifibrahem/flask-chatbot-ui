@@ -12,7 +12,6 @@ import { loadSettings, saveSettings, fetchModels, renderModelList, updateModelBa
 import { loadConversationList, openConversation, createNewConversation, persistConversation } from './conversations.js';
 import { loadMcpConfig, saveMcpConfig, reloadTools, renderToolList } from './mcp.js';
 import { sendMessage, setStreaming } from './chat.js';
-import { clearMessages } from './renderer.js';
 
 // ── Event binding ─────────────────────────────────────────────────────────────
 
@@ -21,13 +20,19 @@ function bindEvents() {
   document.getElementById('btn-toggle-sidebar').addEventListener('click', () => toggleSidebar());
   document.getElementById('btn-new-chat').addEventListener('click', createNewConversation);
 
-  // Clear chat
-  document.getElementById('btn-clear-chat').addEventListener('click', () => {
-    if (!state.messages.length || !confirm('Clear all messages?')) return;
-    state.messages   = [];
-    state.displayLog = [];
-    clearMessages();
-    persistConversation();
+  // Model picker popover
+  const modelBadge   = document.getElementById('model-badge');
+  const modelPopover = document.getElementById('model-popover');
+  modelBadge.addEventListener('click', e => {
+    e.stopPropagation();
+    const isOpen = modelPopover.classList.toggle('open');
+    modelBadge.classList.toggle('open', isOpen);
+  });
+  document.addEventListener('click', e => {
+    if (!document.getElementById('model-picker-wrap').contains(e.target)) {
+      modelPopover.classList.remove('open');
+      modelBadge.classList.remove('open');
+    }
   });
 
   // Modal open/close
@@ -41,8 +46,7 @@ function bindEvents() {
   );
 
   // Settings
-  document.getElementById('btn-save-settings').addEventListener('click',        saveSettings);
-  document.getElementById('btn-save-settings-footer').addEventListener('click', saveSettings);
+  document.getElementById('btn-save-settings').addEventListener('click', saveSettings);
   document.getElementById('btn-fetch-models').addEventListener('click',         fetchModels);
 
   // MCP

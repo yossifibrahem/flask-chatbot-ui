@@ -52,16 +52,24 @@ export async function fetchModels() {
 }
 
 export function renderModelList(models) {
-  const container = document.getElementById('model-list');
+  _renderChips(document.getElementById('model-list'),    'model-chip', models);
+  _renderChips(document.getElementById('mp-model-list'), 'mp-chip',    models);
+}
+
+function _renderChips(container, chipClass, models) {
+  if (!container) return;
+  if (!models.length) {
+    container.innerHTML = '<span class="mp-empty">No models — fetch them in Settings</span>';
+    return;
+  }
   container.innerHTML = models.map(m =>
-    `<div class="model-chip${m === state.model ? ' selected' : ''}" data-model="${m}">${m}</div>`
+    `<div class="${chipClass}${m === state.model ? ' selected' : ''}" data-model="${m}">${m}</div>`
   ).join('');
 
-  container.querySelectorAll('.model-chip').forEach(chip => {
+  container.querySelectorAll(`.${chipClass}`).forEach(chip => {
     chip.addEventListener('click', () => {
       state.model = chip.dataset.model;
-      container.querySelectorAll('.model-chip').forEach(c => c.classList.remove('selected'));
-      chip.classList.add('selected');
+      renderModelList(models);  // re-render both lists with updated selection
       updateModelBadge();
       saveSettings();
     });
@@ -69,7 +77,5 @@ export function renderModelList(models) {
 }
 
 export function updateModelBadge() {
-  const badge = document.getElementById('model-badge');
-  badge.textContent = state.model || 'No model';
-  badge.title       = state.model || '';
+  document.getElementById('model-badge-label').textContent = state.model || 'No model';
 }

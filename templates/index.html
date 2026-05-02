@@ -80,15 +80,18 @@
     <input id="chat-title-input" type="text" placeholder="Untitled Conversation" maxlength="80" />
 
     <div class="header-actions">
-      <button class="header-btn" id="btn-clear-chat" title="Clear messages">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <polyline points="3 6 5 6 21 6"/>
-          <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
-          <path d="M10 11v6"/><path d="M14 11v6"/>
-        </svg>
-        Clear
-      </button>
-      <span id="model-badge">No model</span>
+      <div id="model-picker-wrap">
+        <button id="model-badge" title="Click to change model">
+          <span id="model-badge-label">No model</span>
+          <svg id="model-badge-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="6 9 12 15 18 9"/>
+          </svg>
+        </button>
+        <div id="model-popover">
+          <div class="mp-header">Select model</div>
+          <div id="mp-model-list"><span class="mp-empty">No models — fetch them in Settings</span></div>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -159,8 +162,7 @@
         <input type="password" id="api-key" placeholder="sk-…" autocomplete="off" />
       </div>
       <div style="display:flex;gap:8px;margin-bottom:4px;">
-        <button class="btn-primary"   id="btn-fetch-models">Fetch Models</button>
-        <button class="btn-secondary" id="btn-save-settings">Save Settings</button>
+        <button class="btn-secondary" id="btn-fetch-models">Fetch Models</button>
       </div>
       <div id="settings-status" class="status-msg"></div>
       <div class="model-list" id="model-list"></div>
@@ -174,7 +176,7 @@
     </div>
     <div class="modal-footer">
       <button class="btn-secondary" data-close="settings-modal">Close</button>
-      <button class="btn-primary"   id="btn-save-settings-footer">Save Settings</button>
+      <button class="btn-primary"   id="btn-save-settings">Save Settings</button>
     </div>
   </div>
 </div>
@@ -197,8 +199,7 @@
         <label>mcp.json</label>
         <textarea id="mcp-config-editor" spellcheck="false"></textarea>
       </div>
-      <div style="display:flex;gap:8px;">
-        <button class="btn-primary"   id="btn-save-mcp">Save Config</button>
+      <div style="display:flex;gap:8px;margin-bottom:4px;">
         <button class="btn-secondary" id="btn-reload-tools">Reload Tools</button>
       </div>
       <div id="mcp-status" class="status-msg"></div>
@@ -211,6 +212,7 @@
     </div>
     <div class="modal-footer">
       <button class="btn-secondary" data-close="mcp-modal">Close</button>
+      <button class="btn-primary"   id="btn-save-mcp">Save Config</button>
     </div>
   </div>
 </div>

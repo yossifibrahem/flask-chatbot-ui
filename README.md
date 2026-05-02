@@ -10,7 +10,7 @@ pip install -r requirements.txt
 
 # 2. Run
 python app.py
-# → Open http://localhost:5000
+# → Open http://localhost:8080
 ```
 
 ## Features
@@ -64,12 +64,31 @@ Click **Reload Tools** to connect and list available tools. When the model reque
 
 ```
 chatbot/
-├── app.py              # Flask backend
-├── mcp.json            # MCP server configuration
+├── app.py                  # App factory + entry point
+├── routes.py               # All HTTP routes (one Blueprint)
+├── store.py                # Conversation persistence (file-system CRUD)
+├── mcp_service.py          # MCP config, tool discovery, tool invocation
+├── streaming.py            # SSE formatting + OpenAI stream loop
+├── mcp.json                # MCP server configuration (auto-created)
 ├── requirements.txt
-├── conversations/      # Saved conversations (auto-created)
-└── templates/
-    └── index.html      # Full UI
+├── conversations/          # Saved conversations (auto-created)
+├── templates/
+│   └── index.html          # App shell (no inline CSS or JS)
+└── static/
+    ├── css/
+    │   └── main.css        # All styles
+    └── js/
+        ├── app.js          # Entry point — event binding + boot
+        ├── state.js        # Shared state object + constants
+        ├── storage.js      # localStorage wrapper
+        ├── api.js          # Typed HTTP client
+        ├── markdown.js     # Markdown + LaTeX rendering pipeline
+        ├── renderer.js     # DOM rendering (messages, tool dialogs)
+        ├── conversations.js# Conversation list, open, create, delete
+        ├── settings.js     # Settings load/save, model list
+        ├── mcp.js          # MCP config, tool list, tool execution
+        ├── chat.js         # SSE stream loop + tool-call orchestration
+        └── ui.js           # Toast, modals, sidebar, input helpers
 ```
 
 ## Compatible APIs
