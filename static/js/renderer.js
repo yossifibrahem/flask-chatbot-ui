@@ -16,7 +16,8 @@ const ICONS = {
   copy:         `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>`,
   chevronRight: `<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>`,
   chevronDown:  `<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>`,
-  brain:        `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.5 2a2.5 2.5 0 0 1 5 0v.5a5 5 0 0 1 5 5v8a5 5 0 0 1-5 5h-5a5 5 0 0 1-5-5v-8a5 5 0 0 1 5-5V2z"/><path d="M9 13h6M9 9h6M9 17h3"/></svg>`,
+  brain:        `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6"/><path d="M10 22h4"/><path d="M12 2a7 7 0 0 0-4 12c0 1.5.5 2 1 3h6c.5-1 1-1.5 1-3a7 7 0 0 0-4-12z"/></svg>`,
+  toolSmall:    `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>`,
 };
 
 // ── Utilities ─────────────────────────────────────────────────────────────────
@@ -293,6 +294,7 @@ export function appendToolResult(toolName, args, result) {
   strip.innerHTML = `
     <button class="tr-summary">
       <span class="tr-chevron">${ICONS.chevronRight}</span>
+      <span class="tool-icon">${ICONS.toolSmall}</span>
       <span class="tr-tool-name">${escapeHtml(toolName)}</span>
       <span class="tr-status">${ICONS.checkSmall} completed</span>
     </button>
@@ -353,6 +355,7 @@ export function showToolConfirmation(calls) {
         <div class="tc-item-row">
           <button class="tc-item-header">
             <span class="tc-item-chevron">${ICONS.chevronRight}</span>
+            <span class="tool-icon">${ICONS.toolSmall}</span>
             <span class="tc-item-name">${escapeHtml(call.function.name)}</span>
             ${hasArgs ? '' : '<span class="tc-item-noargs">no arguments</span>'}
           </button>

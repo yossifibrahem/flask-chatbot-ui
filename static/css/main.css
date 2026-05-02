@@ -514,7 +514,8 @@ body::before {
 }
 .thinking-header:hover .thinking-chevron { color: var(--text2); }
 
-.thinking-icon    { flex-shrink: 0; opacity: .7; display: inline-flex; align-items: center; }
+.thinking-icon,
+.tool-icon      { flex-shrink: 0; opacity: .7; display: inline-flex; align-items: center; }
 .thinking-label   { color: var(--accent); font-weight: 500; flex: 1; }
 
 /* Animated pulse dot while streaming */
