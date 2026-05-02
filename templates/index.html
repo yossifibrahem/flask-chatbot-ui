@@ -87,7 +87,26 @@
     </div>
   </div>
 
-  <div id="messages"></div>
+  <div id="messages">
+    <div id="empty-state">
+      <div class="es-logo">Lu<em>men</em></div>
+      <div class="es-sub">Your AI assistant — ready to help</div>
+      <div class="es-prompts">
+        <div class="es-prompt" data-prompt="Explain how transformers work in machine learning">
+          <strong>EXPLAIN</strong>How do transformers work in machine learning?
+        </div>
+        <div class="es-prompt" data-prompt="Write a Python function to parse JSON with error handling">
+          <strong>CODE</strong>Write a Python function to parse JSON safely
+        </div>
+        <div class="es-prompt" data-prompt="What are the key differences between REST and GraphQL APIs?">
+          <strong>COMPARE</strong>REST vs GraphQL — key differences
+        </div>
+        <div class="es-prompt" data-prompt="Help me write a concise executive summary for a product launch">
+          <strong>WRITE</strong>Executive summary for a product launch
+        </div>
+      </div>
+    </div>
+  </div>
 
   <div id="input-area">
     <div class="input-wrap">
@@ -142,7 +161,7 @@
           <label>API Key</label>
           <input type="password" id="api-key" placeholder="sk-…" autocomplete="off" />
         </div>
-        <div class="btn-row">
+        <div style="display:flex;gap:8px;margin-bottom:4px;">
           <button class="btn-secondary" id="btn-fetch-models">Fetch Models</button>
         </div>
         <div id="settings-status" class="status-msg"></div>
@@ -150,7 +169,7 @@
         <div class="section-sep"></div>
         <div class="section-title">System Prompt</div>
         <div class="field">
-          <textarea id="system-prompt" class="textarea-tall" placeholder="You are a helpful assistant…"></textarea>
+          <textarea id="system-prompt" style="min-height:110px" placeholder="You are a helpful assistant…"></textarea>
           <div class="field-note">Sent as the system message at the start of every conversation.</div>
         </div>
       </div>
@@ -162,7 +181,7 @@
           <label>mcp.json</label>
           <textarea id="mcp-config-editor" spellcheck="false"></textarea>
         </div>
-        <div class="btn-row">
+        <div style="display:flex;gap:8px;margin-bottom:4px;">
           <button class="btn-secondary" id="btn-reload-tools">Reload Tools</button>
         </div>
         <div id="mcp-status" class="status-msg"></div>

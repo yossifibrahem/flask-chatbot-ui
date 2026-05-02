@@ -4,7 +4,7 @@ import { api }   from './api.js';
 import { state } from './state.js';
 import {
   createStreamingMessage, appendMessage, appendToolResult,
-  showToolConfirmation, finalizeStreamingMessage, escapeHtml, scrollToBottom,
+  showToolConfirmation, finalizeStreamingMessage, escapeHtml, scrollToBottom, pinToBottom,
   createThinkingBlock, updateThinkingBlock, finalizeThinkingBlock,
 } from './renderer.js';
 import { applyMarkdown } from './markdown.js';
@@ -49,6 +49,7 @@ export async function sendMessage(userText) {
 
   setStreaming(true);
 
+  // Auto-title from the first message.
   if (state.messages.length === 0) {
     document.getElementById('chat-title-input').value =
       userText.slice(0, 42) + (userText.length > 42 ? '…' : '');
@@ -57,87 +58,34 @@ export async function sendMessage(userText) {
   state.messages.push({ role: 'user', content: userText });
   state.displayLog.push({ type: 'message', role: 'user', content: userText });
   appendMessage('user', userText);
+  pinToBottom(); // User sent a message — always snap to bottom
 
   await runChatLoop();
   await persistConversation();
   setStreaming(false);
 }
 
-// ── SSE helpers ───────────────────────────────────────────────────────────────
-
-/** Parses a single SSE event and mutates the streaming context. Returns false on terminal error. */
-function processSSEEvent(raw, ctx) {
-  const evt = JSON.parse(raw);
-
-  if (evt.type === 'reasoning') {
-    ctx.accReasoning += evt.content;
-    if (!ctx.reasoningBodyEl) ctx.reasoningBodyEl = createThinkingBlock();
-    updateThinkingBlock(ctx.reasoningBodyEl, ctx.accReasoning);
-
-  } else if (evt.type === 'text') {
-    ctx.accText += evt.content;
-    const el = ctx.getContentEl();
-    el.classList.add('cursor-blink');
-    applyMarkdown(el, ctx.accText);
-    scrollToBottom();
-
-  } else if (evt.type === 'tool_calls') {
-    ctx.toolCalls = evt.calls;
-
-  } else if (evt.type === 'error') {
-    const el = ctx.getContentEl();
-    el.classList.remove('cursor-blink');
-    el.innerHTML = `<span style="color:var(--red)">Error: ${escapeHtml(evt.message)}</span>`;
-    return false; // signal abort
-  }
-
-  return true;
-}
-
-/** Reads the SSE response body line-by-line, calling processSSEEvent for each data event. */
-async function readSSEStream(resp, ctx) {
-  const reader  = resp.body.getReader();
-  const decoder = new TextDecoder();
-  let   buffer  = '';
-
-  outer: while (true) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    buffer += decoder.decode(value, { stream: true });
-
-    const lines = buffer.split('\n');
-    buffer = lines.pop(); // keep incomplete line
-
-    for (const line of lines) {
-      if (!line.startsWith('data: ')) continue;
-      const raw = line.slice(6).trim();
-      if (raw === '[DONE]') break outer;
-
-      try {
-        if (!processSSEEvent(raw, ctx)) return false;
-      } catch { /* malformed SSE line — skip */ }
-    }
-  }
-  return true;
-}
-
 // ── SSE loop ──────────────────────────────────────────────────────────────────
 
 async function runChatLoop() {
-  let contentEl = null;
-
-  const ctx = {
-    accText:        '',
-    accReasoning:   '',
-    reasoningBodyEl: null,
-    toolCalls:      null,
-    getContentEl:   () => { if (!contentEl) contentEl = createStreamingMessage(); return contentEl; },
-  };
+  // contentEl is created lazily on the first text chunk so that if reasoning
+  // arrives first, the thinking block is inserted into the DOM before it.
+  let contentEl    = null;
+  let accText      = '';
+  let accReasoning = '';
+  let reasoningBodyEl = null;
+  let toolCalls    = null;
 
   state.streamId = crypto.randomUUID();
 
+  // Helper: get-or-create the content element (always after any thinking block).
+  const getContentEl = () => {
+    if (!contentEl) contentEl = createStreamingMessage();
+    return contentEl;
+  };
+
   try {
-    const resp = await api.stream('/api/chat/stream', {
+    const resp    = await api.stream('/api/chat/stream', {
       api_base:  state.apiBase,
       api_key:   state.apiKey,
       model:     state.model || 'gpt-4o',
@@ -146,21 +94,62 @@ async function runChatLoop() {
       stream_id: state.streamId,
     });
 
-    const success = await readSSEStream(resp, ctx);
-    if (!success) return;
+    const reader  = resp.body.getReader();
+    const decoder = new TextDecoder();
+    let   buffer  = '';
 
-    if (ctx.reasoningBodyEl) finalizeThinkingBlock(ctx.reasoningBodyEl, ctx.accReasoning);
-    if (contentEl)           finalizeStreamingMessage(contentEl, ctx.accText);
+    outer: while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
 
-    if (ctx.toolCalls?.length > 0) {
-      await handleToolCalls(ctx.toolCalls, ctx.accText, ctx.accReasoning);
-    } else if (ctx.accText) {
-      if (ctx.accReasoning) state.displayLog.push({ type: 'thinking', content: ctx.accReasoning });
-      state.messages.push({ role: 'assistant', content: ctx.accText });
-      state.displayLog.push({ type: 'message', role: 'assistant', content: ctx.accText });
+      const lines = buffer.split('\n');
+      buffer = lines.pop(); // keep any incomplete line
+
+      for (const line of lines) {
+        if (!line.startsWith('data: ')) continue;
+        const raw = line.slice(6).trim();
+        if (raw === '[DONE]') break outer;
+
+        try {
+          const evt = JSON.parse(raw);
+          if (evt.type === 'reasoning') {
+            accReasoning += evt.content;
+            if (!reasoningBodyEl) reasoningBodyEl = createThinkingBlock();
+            updateThinkingBlock(reasoningBodyEl, accReasoning);
+          } else if (evt.type === 'text') {
+            accText += evt.content;
+            const el = getContentEl();
+            el.classList.add('cursor-blink');
+            applyMarkdown(el, accText);
+            scrollToBottom();
+          } else if (evt.type === 'tool_calls') {
+            toolCalls = evt.calls;
+          } else if (evt.type === 'error') {
+            const el = getContentEl();
+            el.classList.remove('cursor-blink');
+            el.innerHTML = `<span style="color:var(--red)">Error: ${escapeHtml(evt.message)}</span>`;
+            return;
+          }
+        } catch { /* Malformed SSE line — skip */ }
+      }
+    }
+
+    // Finalize the thinking block first (collapse + remove pulse), then text.
+    if (reasoningBodyEl) finalizeThinkingBlock(reasoningBodyEl, accReasoning);
+    if (contentEl) finalizeStreamingMessage(contentEl, accText);
+
+    if (toolCalls?.length > 0) {
+      await handleToolCalls(toolCalls, accText, accReasoning);
+    } else if (accText) {
+      if (accReasoning) {
+        state.displayLog.push({ type: 'thinking', content: accReasoning });
+      }
+      state.messages.push({ role: 'assistant', content: accText });
+      state.displayLog.push({ type: 'message', role: 'assistant', content: accText });
     }
   } catch (err) {
-    const el = ctx.getContentEl();
+    const el = getContentEl();
     el.classList.remove('cursor-blink');
     el.innerHTML = `<span style="color:var(--red)">Network error: ${escapeHtml(err.message)}</span>`;
   }
@@ -168,28 +157,13 @@ async function runChatLoop() {
 
 // ── Tool-call orchestration ───────────────────────────────────────────────────
 
-function parseToolArgs(rawArgs) {
-  try { return JSON.parse(rawArgs || '{}'); } catch { return {}; }
-}
-
-async function resolveToolDecisions(calls) {
-  const autoApprovedFlags = calls.map(tc => {
-    const toolDef = state.mcpTools.find(t => t.name === tc.function.name);
-    return !!(toolDef && isServerAutoApprove(toolDef.server));
-  });
-
-  if (autoApprovedFlags.every(Boolean)) {
-    return new Array(calls.length).fill(true);
-  }
-
-  const decisions = await showToolConfirmation(calls);
-  return decisions.map((d, i) => autoApprovedFlags[i] ? true : d);
-}
-
 async function handleToolCalls(calls, precedingText, precedingReasoning = '') {
-  if (precedingReasoning) state.displayLog.push({ type: 'thinking', content: precedingReasoning });
-  if (precedingText)      state.displayLog.push({ type: 'message', role: 'assistant', content: precedingText });
-
+  if (precedingReasoning) {
+    state.displayLog.push({ type: 'thinking', content: precedingReasoning });
+  }
+  if (precedingText) {
+    state.displayLog.push({ type: 'message', role: 'assistant', content: precedingText });
+  }
   state.messages.push({
     role:       'assistant',
     content:    precedingText || null,
@@ -200,16 +174,32 @@ async function handleToolCalls(calls, precedingText, precedingReasoning = '') {
     })),
   });
 
-  const decisions = await resolveToolDecisions(calls);
+  // Determine which calls need user confirmation vs. are auto-approved
+  const autoApprovedFlags = calls.map(tc => {
+    const toolDef = state.mcpTools.find(t => t.name === tc.function.name);
+    return !!(toolDef && isServerAutoApprove(toolDef.server));
+  });
+  const needsConfirmation = autoApprovedFlags.some(a => !a);
+
+  let decisions;
+  if (needsConfirmation) {
+    // Only ask about the non-auto-approved calls; auto-approved ones resolve true
+    decisions = await showToolConfirmation(calls);
+    decisions = decisions.map((d, i) => autoApprovedFlags[i] ? true : d);
+  } else {
+    decisions = new Array(calls.length).fill(true);
+  }
 
   for (let i = 0; i < calls.length; i++) {
-    const tc     = calls[i];
-    const args   = parseToolArgs(tc.function.arguments);
+    const tc   = calls[i];
+    let   args = {};
+    try { args = JSON.parse(tc.function.arguments || '{}'); } catch {}
     const result = decisions[i] ? await executeTool(tc) : 'Tool execution denied by user.';
     appendToolResult(tc.function.name, args, result);
     state.displayLog.push({ type: 'tool_result', name: tc.function.name, args, result });
     state.messages.push({ role: 'tool', tool_call_id: tc.id, content: result });
   }
 
+  // Re-enter the loop so the model can respond to tool results.
   await runChatLoop();
 }
