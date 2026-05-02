@@ -37,13 +37,27 @@ function bindEvents() {
 
   // Modal open/close
   document.getElementById('btn-open-settings').addEventListener('click', () => openModal('settings-modal'));
-  document.getElementById('btn-open-mcp').addEventListener('click',      () => openModal('mcp-modal'));
   document.querySelectorAll('[data-close]').forEach(btn =>
     btn.addEventListener('click', () => closeModal(btn.dataset.close))
   );
   document.querySelectorAll('.modal-overlay').forEach(overlay =>
     overlay.addEventListener('click', e => { if (e.target === overlay) closeModal(overlay.id); })
   );
+
+  // Tab switching
+  document.querySelectorAll('.modal-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      const targetId = tab.dataset.tab;
+      document.querySelectorAll('.modal-tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+      document.querySelectorAll('.tab-footer-btn').forEach(b => b.classList.remove('active'));
+      tab.classList.add('active');
+      document.getElementById(targetId).classList.add('active');
+      document.querySelector(`.tab-footer-btn[data-for-tab="${targetId}"]`)?.classList.add('active');
+    });
+  });
+  // Show the correct footer button for the default active tab on load.
+  document.querySelector('.tab-footer-btn[data-for-tab="tab-settings"]').classList.add('active');
 
   // Settings
   document.getElementById('btn-save-settings').addEventListener('click', saveSettings);

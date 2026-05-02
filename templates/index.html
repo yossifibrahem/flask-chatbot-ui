@@ -55,14 +55,6 @@
       </svg>
       Settings
     </button>
-    <button class="sidebar-action" id="btn-open-mcp">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/>
-        <line x1="8"  y1="21" x2="16" y2="21"/>
-        <line x1="12" y1="17" x2="12" y2="21"/>
-      </svg>
-      MCP Servers
-    </button>
   </div>
 </aside>
 
@@ -141,8 +133,12 @@
 <!-- ── Settings Modal ── -->
 <div class="modal-overlay" id="settings-modal">
   <div class="modal">
+
     <div class="modal-header">
-      <span class="modal-title">Settings</span>
+      <nav class="modal-tabs">
+        <button class="modal-tab active" data-tab="tab-settings">Settings</button>
+        <button class="modal-tab"        data-tab="tab-mcp">MCP Servers</button>
+      </nav>
       <button class="modal-close" data-close="settings-modal">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <line x1="18" y1="6" x2="6" y2="18"/>
@@ -150,70 +146,60 @@
         </svg>
       </button>
     </div>
-    <div class="modal-body">
-      <div class="section-title">API Configuration</div>
-      <div class="field">
-        <label>API Base URL</label>
-        <input type="text" id="api-base" placeholder="https://api.openai.com/v1" />
-        <div class="field-note">Compatible with any OpenAI-format API</div>
-      </div>
-      <div class="field">
-        <label>API Key</label>
-        <input type="password" id="api-key" placeholder="sk-…" autocomplete="off" />
-      </div>
-      <div style="display:flex;gap:8px;margin-bottom:4px;">
-        <button class="btn-secondary" id="btn-fetch-models">Fetch Models</button>
-      </div>
-      <div id="settings-status" class="status-msg"></div>
-      <div class="model-list" id="model-list"></div>
 
-      <div class="section-sep"></div>
-      <div class="section-title">System Prompt</div>
-      <div class="field">
-        <textarea id="system-prompt" style="min-height:110px" placeholder="You are a helpful assistant…"></textarea>
-        <div class="field-note">Sent as the system message at the start of every conversation.</div>
+    <div class="modal-body">
+
+      <!-- Settings tab -->
+      <div id="tab-settings" class="tab-panel active">
+        <div class="section-title">API Configuration</div>
+        <div class="field">
+          <label>API Base URL</label>
+          <input type="text" id="api-base" placeholder="https://api.openai.com/v1" />
+          <div class="field-note">Compatible with any OpenAI-format API</div>
+        </div>
+        <div class="field">
+          <label>API Key</label>
+          <input type="password" id="api-key" placeholder="sk-…" autocomplete="off" />
+        </div>
+        <div style="display:flex;gap:8px;margin-bottom:4px;">
+          <button class="btn-secondary" id="btn-fetch-models">Fetch Models</button>
+        </div>
+        <div id="settings-status" class="status-msg"></div>
+        <div class="model-list" id="model-list"></div>
+        <div class="section-sep"></div>
+        <div class="section-title">System Prompt</div>
+        <div class="field">
+          <textarea id="system-prompt" style="min-height:110px" placeholder="You are a helpful assistant…"></textarea>
+          <div class="field-note">Sent as the system message at the start of every conversation.</div>
+        </div>
       </div>
+
+      <!-- MCP tab -->
+      <div id="tab-mcp" class="tab-panel">
+        <div class="section-title">Server Configuration</div>
+        <div class="field">
+          <label>mcp.json</label>
+          <textarea id="mcp-config-editor" spellcheck="false"></textarea>
+        </div>
+        <div style="display:flex;gap:8px;margin-bottom:4px;">
+          <button class="btn-secondary" id="btn-reload-tools">Reload Tools</button>
+        </div>
+        <div id="mcp-status" class="status-msg"></div>
+        <div class="section-sep"></div>
+        <div class="section-title">Available Tools</div>
+        <div id="tool-list">
+          <div class="no-tools-label">No tools loaded — click Reload Tools</div>
+        </div>
+      </div>
+
     </div>
+
     <div class="modal-footer">
       <button class="btn-secondary" data-close="settings-modal">Close</button>
-      <button class="btn-primary"   id="btn-save-settings">Save Settings</button>
+      <button class="btn-primary tab-footer-btn" data-for-tab="tab-settings" id="btn-save-settings">Save Settings</button>
+      <button class="btn-primary tab-footer-btn" data-for-tab="tab-mcp"      id="btn-save-mcp">Save Config</button>
     </div>
-  </div>
-</div>
 
-<!-- ── MCP Modal ── -->
-<div class="modal-overlay" id="mcp-modal">
-  <div class="modal">
-    <div class="modal-header">
-      <span class="modal-title">MCP Servers</span>
-      <button class="modal-close" data-close="mcp-modal">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <line x1="18" y1="6" x2="6" y2="18"/>
-          <line x1="6"  y1="6" x2="18" y2="18"/>
-        </svg>
-      </button>
-    </div>
-    <div class="modal-body">
-      <div class="section-title">Server Configuration</div>
-      <div class="field">
-        <label>mcp.json</label>
-        <textarea id="mcp-config-editor" spellcheck="false"></textarea>
-      </div>
-      <div style="display:flex;gap:8px;margin-bottom:4px;">
-        <button class="btn-secondary" id="btn-reload-tools">Reload Tools</button>
-      </div>
-      <div id="mcp-status" class="status-msg"></div>
-
-      <div class="section-sep"></div>
-      <div class="section-title">Available Tools</div>
-      <div id="tool-list">
-        <div class="no-tools-label">No tools loaded — click Reload Tools</div>
-      </div>
-    </div>
-    <div class="modal-footer">
-      <button class="btn-secondary" data-close="mcp-modal">Close</button>
-      <button class="btn-primary"   id="btn-save-mcp">Save Config</button>
-    </div>
   </div>
 </div>
 
