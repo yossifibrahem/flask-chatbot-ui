@@ -65,12 +65,30 @@ function createMessageRow(avatarClass, avatarIcon, roleLabel) {
       <div class="msg-avatar ${avatarClass}">${avatarIcon}</div>
       <span class="msg-role-label">${roleLabel}</span>
       <span class="msg-time">${formatTime()}</span>
-      <div class="msg-actions"></div>
     </div>`;
 
   document.getElementById('messages').appendChild(row);
   scrollToBottom();
   return row;
+}
+
+// ── Copy footer ───────────────────────────────────────────────────────────────
+
+function addCopyFooter(row, getText) {
+  const footer  = document.createElement('div');
+  footer.className = 'msg-footer';
+
+  const copyBtn = document.createElement('button');
+  copyBtn.className = 'msg-action-btn';
+  copyBtn.innerHTML = `${ICONS.copy} copy`;
+  copyBtn.onclick = () => {
+    navigator.clipboard.writeText(getText());
+    copyBtn.textContent = '✓ copied';
+    setTimeout(() => { copyBtn.innerHTML = `${ICONS.copy} copy`; }, 1500);
+  };
+
+  footer.appendChild(copyBtn);
+  row.appendChild(footer);
 }
 
 // ── Public renderers ──────────────────────────────────────────────────────────
@@ -100,17 +118,8 @@ export function appendMessage(role, content) {
   }
   row.appendChild(contentEl);
 
-  // Copy-to-clipboard action button
-  const copyBtn = document.createElement('button');
-  copyBtn.className = 'msg-action-btn';
-  copyBtn.innerHTML = `${ICONS.copy} copy`;
-  copyBtn.onclick = () => {
-    const text = typeof content === 'string' ? content : content.map(p => p.text || '').join('\n');
-    navigator.clipboard.writeText(text);
-    copyBtn.textContent = '✓ copied';
-    setTimeout(() => { copyBtn.innerHTML = `${ICONS.copy} copy`; }, 1500);
-  };
-  row.querySelector('.msg-actions').appendChild(copyBtn);
+  const rawText = typeof content === 'string' ? content : content.map(p => p.text || '').join('\n');
+  addCopyFooter(row, () => rawText);
 
   return contentEl;
 }
@@ -122,6 +131,13 @@ export function createStreamingMessage() {
   contentEl.innerHTML = '&nbsp;';
   row.appendChild(contentEl);
   return contentEl;
+}
+
+/** Called by chat.js once streaming is done — removes cursor and adds the copy footer. */
+export function finalizeStreamingMessage(contentEl, text) {
+  contentEl.classList.remove('cursor-blink');
+  applyMarkdown(contentEl, text);
+  addCopyFooter(contentEl.parentElement, () => text);
 }
 
 export function appendToolResult(toolName, result) {

@@ -408,8 +408,14 @@ body::before {
 .msg-role-label { font-family: 'JetBrains Mono', monospace; font-size: .65rem; color: var(--text3); letter-spacing: .6px; text-transform: uppercase; }
 .msg-time { font-family: 'JetBrains Mono', monospace; font-size: .6rem; color: var(--text3); margin-left: auto; }
 
-.msg-actions { display: flex; gap: 3px; opacity: 0; transition: opacity .15s; }
-.msg-row:hover .msg-actions { opacity: 1; }
+.msg-footer {
+  display: flex;
+  gap: 3px;
+  margin-top: 6px;
+  opacity: 0;
+  transition: opacity .15s;
+}
+.msg-row:hover .msg-footer { opacity: 1; }
 .msg-action-btn {
   background: none; border: none;
   color: var(--text3);

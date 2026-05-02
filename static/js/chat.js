@@ -4,7 +4,7 @@ import { api }   from './api.js';
 import { state } from './state.js';
 import {
   createStreamingMessage, appendMessage, appendToolResult,
-  showToolConfirmation, escapeHtml, scrollToBottom,
+  showToolConfirmation, finalizeStreamingMessage, escapeHtml, scrollToBottom,
 } from './renderer.js';
 import { applyMarkdown } from './markdown.js';
 import { executeTool }   from './mcp.js';
@@ -115,7 +115,7 @@ async function runChatLoop() {
       }
     }
 
-    contentEl.classList.remove('cursor-blink');
+    finalizeStreamingMessage(contentEl, accText);
 
     if (toolCalls?.length > 0) {
       await handleToolCalls(toolCalls, accText);
