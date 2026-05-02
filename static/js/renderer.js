@@ -203,56 +203,60 @@ export function renderAllMessages(displayLog) {
 
 export function showToolConfirmation(calls) {
   return new Promise(resolve => {
-    const decisions  = new Array(calls.length).fill(null);
-    const row        = getOrCreateAssistantRow();
+    const row = getOrCreateAssistantRow();
     row.querySelector('.msg-footer')?.remove();
-    // Wrap all pills so we can fade them out together
-    const pillsWrap  = document.createElement('div');
-    pillsWrap.className = 'tc-pills-wrap';
-    row.appendChild(pillsWrap);
+
+    const wrap = document.createElement('div');
+    wrap.className = 'tc-wrap';
+    row.appendChild(wrap);
     scrollToBottom();
 
-    const checkAllDecided = () => {
-      if (!decisions.every(d => d !== null)) return;
-      pillsWrap.style.transition = 'opacity .2s';
-      pillsWrap.style.opacity    = '0';
-      setTimeout(() => pillsWrap.remove(), 200);
-      resolve(decisions);
+    const dismiss = (allowed) => {
+      wrap.style.transition = 'opacity .2s';
+      wrap.style.opacity    = '0';
+      setTimeout(() => wrap.remove(), 200);
+      resolve(new Array(calls.length).fill(allowed));
     };
 
-    calls.forEach((call, i) => {
+    // One collapsible row per tool call
+    calls.forEach(call => {
       let args = {};
       try { args = JSON.parse(call.function.arguments || '{}'); } catch {}
+      const hasArgs = Object.keys(args).length > 0;
 
-      const argKeys    = Object.keys(args);
-      const argPreview = argKeys.length
-        ? `${argKeys[0]}: "${String(args[argKeys[0]]).slice(0, 48)}${String(args[argKeys[0]]).length > 48 ? '\u2026' : ''}"`
-        : null;
+      const item = document.createElement('div');
+      item.className = 'tc-item';
+      item.innerHTML = `
+        <button class="tc-item-header">
+          <span class="tc-item-chevron">${ICONS.chevronRight}</span>
+          <span class="tc-item-name">${escapeHtml(call.function.name)}</span>
+          ${hasArgs ? '' : '<span class="tc-item-noargs">no arguments</span>'}
+        </button>
+        ${hasArgs ? `<pre class="tc-item-args" style="display:none">${escapeHtml(JSON.stringify(args, null, 2))}</pre>` : ''}`;
 
-      const pill = document.createElement('div');
-      pill.className = 'tc-pill';
-      pill.innerHTML = `
-        <span class="tc-pill-name">${escapeHtml(call.function.name)}</span>
-        ${argPreview ? `<span class="tc-pill-arg">${escapeHtml(argPreview)}</span>` : ''}
-        <div class="tc-pill-btns">
-          <button class="tc-pill-allow">${ICONS.check} Allow</button>
-          <button class="tc-pill-deny">${ICONS.close} Deny</button>
-        </div>`;
+      if (hasArgs) {
+        const btn  = item.querySelector('.tc-item-header');
+        const pre  = item.querySelector('.tc-item-args');
+        const chev = item.querySelector('.tc-item-chevron');
+        btn.addEventListener('click', () => {
+          const open = item.classList.toggle('open');
+          chev.innerHTML = open ? ICONS.chevronDown : ICONS.chevronRight;
+          pre.style.display = open ? 'block' : 'none';
+          if (open) scrollToBottom();
+        });
+      }
 
-      pill.querySelector('.tc-pill-allow').addEventListener('click', () => {
-        decisions[i] = true;
-        pill.querySelector('.tc-pill-btns').innerHTML =
-          '<span class="tc-pill-verdict allowed">\u2713 allowed</span>';
-        checkAllDecided();
-      });
-      pill.querySelector('.tc-pill-deny').addEventListener('click', () => {
-        decisions[i] = false;
-        pill.querySelector('.tc-pill-btns').innerHTML =
-          '<span class="tc-pill-verdict denied">\u2715 denied</span>';
-        checkAllDecided();
-      });
-
-      pillsWrap.appendChild(pill);
+      wrap.appendChild(item);
     });
+
+    // Single allow / deny for all calls
+    const footer = document.createElement('div');
+    footer.className = 'tc-footer';
+    footer.innerHTML = `
+      <button class="tc-allow">${ICONS.check} Allow</button>
+      <button class="tc-deny">${ICONS.close} Deny</button>`;
+    footer.querySelector('.tc-allow').addEventListener('click', () => dismiss(true));
+    footer.querySelector('.tc-deny').addEventListener('click',  () => dismiss(false));
+    wrap.appendChild(footer);
   });
 }
