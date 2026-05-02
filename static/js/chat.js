@@ -4,12 +4,15 @@ import { api }   from './api.js';
 import { state } from './state.js';
 import {
   createStreamingMessage, appendMessage, appendToolResult,
-  showToolConfirmation, finalizeStreamingMessage, escapeHtml, scrollToBottom,
+  showToolConfirmation, cancelToolConfirmation, finalizeStreamingMessage, escapeHtml, scrollToBottom,
   createThinkingBlock, updateThinkingBlock, finalizeThinkingBlock,
 } from './renderer.js';
 import { applyMarkdown } from './markdown.js';
 import { executeTool, isServerEnabled, isServerAutoApprove } from './mcp.js';
 import { persistConversation, createNewConversation } from './conversations.js';
+
+let turnAbortController = null;
+let turnCancelled = false;
 
 // ── Payload builders ──────────────────────────────────────────────────────────
 
@@ -41,6 +44,22 @@ export function setStreaming(active) {
   document.getElementById('stop-btn').style.display = active ? 'grid' : 'none';
 }
 
+export async function stopAssistantTurn() {
+  if (!state.isStreaming && !state.streamId) return;
+
+  turnCancelled = true;
+  cancelToolConfirmation();
+  turnAbortController?.abort();
+
+  const streamId = state.streamId;
+  state.streamId = null;
+  setStreaming(false);
+
+  if (streamId) {
+    try { await api.post('/api/chat/cancel', { stream_id: streamId }); } catch {}
+  }
+}
+
 // ── Main entry point ──────────────────────────────────────────────────────────
 
 export async function sendMessage(userText) {
@@ -58,9 +77,17 @@ export async function sendMessage(userText) {
   state.displayLog.push({ type: 'message', role: 'user', content: userText });
   appendMessage('user', userText);
 
-  await runChatLoop();
-  await persistConversation();
-  setStreaming(false);
+  turnCancelled = false;
+
+  try {
+    await runChatLoop();
+    await persistConversation();
+  } finally {
+    turnAbortController?.abort();
+    turnAbortController = null;
+    state.streamId = null;
+    setStreaming(false);
+  }
 }
 
 // ── SSE helpers ───────────────────────────────────────────────────────────────
@@ -137,6 +164,8 @@ async function runChatLoop() {
   state.streamId = crypto.randomUUID();
 
   try {
+    turnAbortController = new AbortController();
+
     const resp = await api.stream('/api/chat/stream', {
       api_base:  state.apiBase,
       api_key:   state.apiKey,
@@ -144,10 +173,10 @@ async function runChatLoop() {
       messages:  buildApiMessages(),
       tools:     buildToolsPayload(),
       stream_id: state.streamId,
-    });
+    }, { signal: turnAbortController.signal });
 
     const success = await readSSEStream(resp, ctx);
-    if (!success) return;
+    if (!success || turnCancelled) return;
 
     if (ctx.reasoningBodyEl) finalizeThinkingBlock(ctx.reasoningBodyEl, ctx.accReasoning);
     if (contentEl)           finalizeStreamingMessage(contentEl, ctx.accText);
@@ -160,6 +189,8 @@ async function runChatLoop() {
       state.displayLog.push({ type: 'message', role: 'assistant', content: ctx.accText });
     }
   } catch (err) {
+    if (turnCancelled || err.name === 'AbortError') return;
+
     const el = ctx.getContentEl();
     el.classList.remove('cursor-blink');
     el.innerHTML = `<span style="color:var(--red)">Network error: ${escapeHtml(err.message)}</span>`;
@@ -183,12 +214,17 @@ async function resolveToolDecisions(calls) {
   }
 
   const decisions = await showToolConfirmation(calls);
+  if (decisions === null || turnCancelled) return null;
+
   return decisions.map((d, i) => autoApprovedFlags[i] ? true : d);
 }
 
 async function handleToolCalls(calls, precedingText, precedingReasoning = '') {
   if (precedingReasoning) state.displayLog.push({ type: 'thinking', content: precedingReasoning });
   if (precedingText)      state.displayLog.push({ type: 'message', role: 'assistant', content: precedingText });
+
+  const decisions = await resolveToolDecisions(calls);
+  if (decisions === null || turnCancelled) return;
 
   state.messages.push({
     role:       'assistant',
@@ -200,16 +236,16 @@ async function handleToolCalls(calls, precedingText, precedingReasoning = '') {
     })),
   });
 
-  const decisions = await resolveToolDecisions(calls);
-
   for (let i = 0; i < calls.length; i++) {
+    if (turnCancelled) return;
+
     const tc     = calls[i];
     const args   = parseToolArgs(tc.function.arguments);
-    const result = decisions[i] ? await executeTool(tc) : 'Tool execution denied by user.';
+    const result = decisions[i] ? await executeTool(tc, { signal: turnAbortController?.signal }) : 'Tool execution denied by user.';
     appendToolResult(tc.function.name, args, result);
     state.displayLog.push({ type: 'tool_result', name: tc.function.name, args, result });
     state.messages.push({ role: 'tool', tool_call_id: tc.id, content: result });
   }
 
-  await runChatLoop();
+  if (!turnCancelled) await runChatLoop();
 }

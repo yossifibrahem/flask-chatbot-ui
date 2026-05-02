@@ -9,11 +9,12 @@ export const api = {
     return (await fetch(url)).json();
   },
 
-  async post(url, body) {
+  async post(url, body, options = {}) {
     return (await fetch(url, {
       method:  'POST',
       headers: JSON_HEADERS,
       body:    JSON.stringify(body),
+      signal:  options.signal,
     })).json();
   },
 
@@ -30,11 +31,12 @@ export const api = {
   },
 
   /** Returns a raw Response whose body is an SSE stream. */
-  stream(url, body) {
+  stream(url, body, options = {}) {
     return fetch(url, {
       method:  'POST',
       headers: JSON_HEADERS,
       body:    JSON.stringify(body),
+      signal:  options.signal,
     });
   },
 };

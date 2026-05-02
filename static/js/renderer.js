@@ -342,7 +342,15 @@ export function renderAllMessages(displayLog) {
 
 // ── Tool confirmation dialog ──────────────────────────────────────────────────
 
+let activeToolConfirmation = null;
+
+export function cancelToolConfirmation() {
+  activeToolConfirmation?.cancel();
+}
+
 export function showToolConfirmation(calls) {
+  cancelToolConfirmation();
+
   return new Promise(resolve => {
     const row = getOrCreateAssistantRow();
     row.querySelector('.msg-footer')?.remove();
@@ -354,16 +362,33 @@ export function showToolConfirmation(calls) {
 
     const decisions = new Array(calls.length).fill(null);
     let pending = calls.length;
+    let settled = false;
+    let timerId = null;
 
-    const cleanupAndResolve = () => {
+    const cleanup = () => {
+      if (activeToolConfirmation?.wrap === wrap) activeToolConfirmation = null;
       wrap.style.transition = 'opacity .2s';
-      wrap.style.opacity    = '0';
-      setTimeout(() => wrap.remove(), 200);
-      resolve(decisions);
+      wrap.style.opacity = '0';
+      timerId = setTimeout(() => wrap.remove(), 200);
+    };
+
+    const settle = value => {
+      if (settled) return;
+      settled = true;
+      cleanup();
+      resolve(value);
+    };
+
+    activeToolConfirmation = {
+      wrap,
+      cancel: () => {
+        if (timerId) clearTimeout(timerId);
+        settle(null);
+      },
     };
 
     const decide = (idx, allowed, item) => {
-      if (decisions[idx] !== null) return;
+      if (settled || decisions[idx] !== null) return;
 
       decisions[idx] = allowed;
       pending -= 1;
@@ -380,7 +405,7 @@ export function showToolConfirmation(calls) {
         status.innerHTML = allowed ? `${ICONS.check} allowed` : `${ICONS.close} denied`;
       }
 
-      if (pending === 0) cleanupAndResolve();
+      if (pending === 0) settle(decisions);
     };
 
     // One independently approvable collapsible row per tool call.

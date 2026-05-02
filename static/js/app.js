@@ -11,7 +11,7 @@ import { openModal, closeModal, toggleSidebar, autoResize, updateCharCount } fro
 import { loadSettings, saveSettings, fetchModels }                           from './settings.js';
 import { loadConversationList, openConversation, createNewConversation, persistConversation } from './conversations.js';
 import { loadMcpConfig, saveMcpConfig, reloadTools, loadCachedTools } from './mcp.js';
-import { sendMessage, setStreaming } from './chat.js';
+import { sendMessage, setStreaming, stopAssistantTurn } from './chat.js';
 import { clearMessages } from './renderer.js';
 
 // ── Event binding ─────────────────────────────────────────────────────────────
@@ -88,10 +88,7 @@ function bindInputEvents() {
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); submitInput(); }
   });
 
-  document.getElementById('stop-btn').addEventListener('click', async () => {
-    if (!state.streamId) return;
-    try { await api.post('/api/chat/cancel', { stream_id: state.streamId }); } catch {}
-  });
+  document.getElementById('stop-btn').addEventListener('click', stopAssistantTurn);
 
   // Chat title persistence
   const titleInput = document.getElementById('chat-title-input');

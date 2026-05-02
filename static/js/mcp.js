@@ -146,7 +146,7 @@ export function renderToolList() {
 
 // ── Tool execution ────────────────────────────────────────────────────────────
 
-export async function executeTool(tc) {
+export async function executeTool(tc, options = {}) {
   const toolDef = state.mcpTools.find(t => t.name === tc.function.name);
   if (!toolDef) return 'Tool not found in any MCP server.';
 
@@ -156,7 +156,7 @@ export async function executeTool(tc) {
   try {
     const data = await api.post('/api/mcp/call', {
       server: toolDef.server, tool: tc.function.name, arguments: args,
-    });
+    }, { signal: options.signal });
     return data.result || data.error || '';
   } catch (err) {
     return `Error: ${err.message}`;
