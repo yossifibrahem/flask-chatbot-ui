@@ -483,39 +483,44 @@ body::before {
 /* ─── Thinking / Reasoning Block ────────────────────────────────────────────── */
 .thinking-block {
   margin: 4px 0 6px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  overflow: hidden;
-  background: var(--surface2);
 }
 
 .thinking-header {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 7px;
   width: 100%;
-  padding: 7px 10px;
+  padding: 0;
   background: none;
   border: none;
   cursor: pointer;
   text-align: left;
   color: var(--text2);
-  font-size: .78rem;
-  font-family: inherit;
+  font-size: .73rem;
+  font-family: 'JetBrains Mono', monospace;
   font-weight: 400;
-  transition: color .15s;
+  transition: color .14s;
+  user-select: none;
 }
 
 .thinking-header:hover { color: var(--text); }
 
-.thinking-chevron { flex-shrink: 0; opacity: .6; }
-.thinking-icon    { flex-shrink: 0; opacity: .7; }
-.thinking-label   { flex: 1; }
+.thinking-chevron {
+  color: var(--text3);
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  transition: color .14s;
+}
+.thinking-header:hover .thinking-chevron { color: var(--text2); }
+
+.thinking-icon    { flex-shrink: 0; opacity: .7; display: inline-flex; align-items: center; }
+.thinking-label   { color: var(--accent); font-weight: 500; flex: 1; }
 
 /* Animated pulse dot while streaming */
 .thinking-pulse {
-  width: 7px;
-  height: 7px;
+  width: 6px;
+  height: 6px;
   border-radius: 50%;
   background: var(--accent);
   flex-shrink: 0;
@@ -527,26 +532,28 @@ body::before {
 }
 
 .thinking-body {
-  margin: 0;
-  padding: 8px 12px 10px;
+  margin-top: 8px;
+  background: var(--code-bg);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  padding: 10px 12px;
   font-family: 'JetBrains Mono', monospace;
-  font-size: .75rem;
-  line-height: 1.6;
+  font-size: .74rem;
   color: var(--text2);
   white-space: pre-wrap;
   word-break: break-word;
   max-height: 320px;
   overflow-y: auto;
-  border-top: 1px solid var(--border);
-  background: var(--surface);
+  line-height: 1.6;
+  animation: fadeUp .15s ease both;
 }
 
 .thinking-body::-webkit-scrollbar { width: 3px; }
 .thinking-body::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
 
-/* Streaming state: slightly highlighted header */
-.thinking-block.thinking-streaming .thinking-header {
-  color: var(--accent);
+/* Streaming state: slightly highlighted label */
+.thinking-block.thinking-streaming .thinking-label {
+  opacity: .85;
 }
 
 .tool-inline {
@@ -556,15 +563,12 @@ body::before {
 /* ─── Tool Confirmation ──────────────────────────────────────────────────────── */
 .tc-wrap {
   margin: 6px 0 2px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  overflow: hidden;
-  font-family: 'JetBrains Mono', monospace;
-  font-size: .75rem;
 }
 
 /* One row per tool call */
-.tc-item { border-bottom: 1px solid var(--border); }
+.tc-item {
+  margin-bottom: 6px;
+}
 
 .tc-item-header {
   display: flex;
@@ -573,23 +577,35 @@ body::before {
   width: 100%;
   background: none;
   border: none;
-  padding: 8px 10px;
+  padding: 0;
   cursor: pointer;
   text-align: left;
-  transition: background .14s;
+  transition: color .14s;
   color: var(--text2);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: .73rem;
+  user-select: none;
 }
-.tc-item-header:hover { background: var(--surface3); }
+.tc-item-header:hover { color: var(--text); }
 
-.tc-item-chevron { color: var(--text3); display: inline-flex; align-items: center; flex-shrink: 0; }
+.tc-item-chevron {
+  color: var(--text3);
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  transition: color .14s;
+}
+.tc-item-header:hover .tc-item-chevron { color: var(--text2); }
+
 .tc-item-name    { color: var(--accent); font-weight: 500; }
 .tc-item-noargs  { color: var(--text3); font-size: .68rem; margin-left: 2px; }
 
 .tc-item-args {
-  margin: 0;
-  padding: 8px 12px 10px 28px;
+  margin-top: 8px;
+  padding: 10px 12px;
   background: var(--code-bg);
-  border-top: 1px solid var(--border);
+  border: 1px solid var(--border);
+  border-radius: 7px;
   font-family: 'JetBrains Mono', monospace;
   font-size: .73rem;
   color: var(--text2);
@@ -607,8 +623,7 @@ body::before {
 .tc-footer {
   display: flex;
   gap: 6px;
-  padding: 8px 10px;
-  background: var(--surface2);
+  padding: 6px 0 2px;
 }
 .tc-allow, .tc-deny {
   display: inline-flex; align-items: center; gap: 4px;
