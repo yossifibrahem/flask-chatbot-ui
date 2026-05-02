@@ -713,13 +713,6 @@ body::before {
   color: var(--accent);
   font-weight: 500;
 }
-.tr-status {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  color: var(--text3);
-  font-size: .68rem;
-}
 
 .tr-body {
   margin-top: 8px;
