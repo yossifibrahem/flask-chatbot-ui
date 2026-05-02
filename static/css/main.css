@@ -479,64 +479,140 @@ body::before {
 .cursor-blink::after { content: '▋'; animation: blink .9s step-end infinite; color: var(--accent); margin-left: 2px; }
 @keyframes blink { 0%,100% { opacity: 1; } 50% { opacity: 0; } }
 
-/* ─── Tool Confirmation ─────────────────────────────────────────────────────── */
-.tool-confirm-box {
+/* ─── Tool Inline (sits inside an assistant msg-row) ─────────────────────────── */
+.tool-inline {
+  margin: 6px 0 2px;
+}
+
+/* ─── Tool Confirmation Pills ────────────────────────────────────────────────── */
+.tc-pills-wrap { margin: 6px 0 2px; }
+.tc-pill {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 10px;
   background: var(--surface2);
   border: 1px solid var(--border);
-  border-left: 2px solid var(--accent);
   border-radius: 8px;
-  padding: 12px 14px;
-  margin-bottom: 8px;
-  font-size: .82rem;
-}
-.tool-confirm-header { display: flex; align-items: center; gap: 7px; color: var(--accent); font-weight: 500; margin-bottom: 10px; font-size: .8rem; }
-.tool-confirm-header svg { width: 14px; height: 14px; flex-shrink: 0; }
-.tc-name-row { margin-bottom: 6px; color: var(--text2); font-size: .8rem; }
-.tc-name { color: var(--accent); font-family: 'JetBrains Mono', monospace; }
-.tc-args-label { font-family: 'JetBrains Mono', monospace; font-size: .65rem; color: var(--text3); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 4px; }
-.tc-args {
-  background: var(--code-bg);
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  padding: 8px 10px;
+  margin-bottom: 6px;
   font-family: 'JetBrains Mono', monospace;
   font-size: .75rem;
+  flex-wrap: wrap;
+  transition: border-color .15s;
+}
+.tc-pill:last-child { margin-bottom: 0; }
+.tc-pill:hover { border-color: var(--border2); }
+
+.tc-pill-name {
+  color: var(--accent);
+  font-weight: 500;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.tc-pill-arg {
+  color: var(--text3);
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.tc-pill-btns {
+  display: flex;
+  gap: 5px;
+  flex-shrink: 0;
+  margin-left: auto;
+}
+.tc-pill-allow, .tc-pill-deny {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 3px 10px;
+  border-radius: 5px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: .68rem;
+  font-weight: 500;
+  cursor: pointer;
+  border: 1px solid;
+  transition: all .14s;
+}
+.tc-pill-allow svg, .tc-pill-deny svg { width: 9px; height: 9px; }
+.tc-pill-allow {
+  background: rgba(107,184,122,.08);
+  border-color: rgba(107,184,122,.35);
+  color: var(--green);
+}
+.tc-pill-allow:hover { background: rgba(107,184,122,.18); }
+.tc-pill-deny {
+  background: rgba(224,112,112,.07);
+  border-color: rgba(224,112,112,.3);
+  color: var(--red);
+}
+.tc-pill-deny:hover { background: rgba(224,112,112,.17); }
+.tc-pill-verdict {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: .68rem;
+  letter-spacing: .2px;
+}
+.tc-pill-verdict.allowed { color: var(--green); }
+.tc-pill-verdict.denied  { color: var(--red); }
+
+/* ─── Tool Result Disclosure ─────────────────────────────────────────────────── */
+.tr-summary {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: .73rem;
+  color: var(--text2);
+  width: 100%;
+  text-align: left;
+  transition: color .14s;
+  user-select: none;
+}
+.tr-summary:hover { color: var(--text); }
+
+.tr-chevron {
+  color: var(--text3);
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  transition: color .14s;
+}
+.tr-summary:hover .tr-chevron { color: var(--text2); }
+
+.tr-tool-name {
+  color: var(--green);
+  font-weight: 500;
+}
+.tr-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--text3);
+  font-size: .68rem;
+}
+
+.tr-body {
+  margin-top: 8px;
+  background: var(--code-bg);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  padding: 10px 12px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: .74rem;
   color: var(--text2);
   white-space: pre-wrap;
-  max-height: 120px;
+  word-break: break-all;
+  max-height: 240px;
   overflow-y: auto;
-  margin-bottom: 10px;
+  line-height: 1.6;
+  animation: fadeUp .15s ease both;
 }
-.tc-buttons { display: flex; gap: 8px; }
-.tc-btn {
-  padding: 6px 14px; border-radius: 7px;
-  font-family: 'JetBrains Mono', monospace; font-size: .7rem;
-  cursor: pointer; border: 1px solid; transition: all .15s;
-  display: flex; align-items: center; gap: 5px;
-}
-.tc-btn svg { width: 11px; height: 11px; }
-.tc-btn.approve { background: rgba(107,184,122,.1); border-color: rgba(107,184,122,.4); color: var(--green); }
-.tc-btn.approve:hover { background: rgba(107,184,122,.2); }
-.tc-btn.deny    { background: rgba(224,112,112,.08); border-color: rgba(224,112,112,.35); color: var(--red); }
-.tc-btn.deny:hover { background: rgba(224,112,112,.18); }
-.tc-decision { font-family: 'JetBrains Mono', monospace; font-size: .7rem; }
-.tc-decision.approved { color: var(--green); }
-.tc-decision.denied   { color: var(--red); }
-
-/* ─── Tool Result ───────────────────────────────────────────────────────────── */
-.tool-result-box {
-  background: var(--surface2);
-  border: 1px solid var(--border);
-  border-left: 2px solid var(--green);
-  border-radius: 8px;
-  padding: 10px 14px;
-  font-family: 'JetBrains Mono', monospace;
-  font-size: .76rem;
-  color: var(--text2);
-  max-height: 200px;
-  overflow-y: auto;
-}
-.tr-label { color: var(--green); font-size: .65rem; text-transform: uppercase; letter-spacing: .8px; margin-bottom: 6px; }
+.tr-body::-webkit-scrollbar { width: 3px; }
+.tr-body::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
 
 /* ─── Input Area ────────────────────────────────────────────────────────────── */
 #input-area { border-top: 1px solid var(--border); padding: 14px 20px; background: var(--surface); flex-shrink: 0; }
