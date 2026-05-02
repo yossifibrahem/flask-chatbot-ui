@@ -352,19 +352,42 @@ export function showToolConfirmation(calls) {
     row.appendChild(wrap);
     scrollToBottom();
 
-    const dismiss = (allowed) => {
+    const decisions = new Array(calls.length).fill(null);
+    let pending = calls.length;
+
+    const cleanupAndResolve = () => {
       wrap.style.transition = 'opacity .2s';
       wrap.style.opacity    = '0';
       setTimeout(() => wrap.remove(), 200);
-      resolve(new Array(calls.length).fill(allowed));
+      resolve(decisions);
     };
 
-    // One collapsible row per tool call
+    const decide = (idx, allowed, item) => {
+      if (decisions[idx] !== null) return;
+
+      decisions[idx] = allowed;
+      pending -= 1;
+
+      item.classList.add('decided');
+      item.querySelectorAll('.tc-allow, .tc-deny').forEach(btn => {
+        btn.disabled = true;
+        btn.style.display = 'none';
+      });
+
+      const status = item.querySelector('.tc-status');
+      if (status) {
+        status.className = `tc-status ${allowed ? 'allowed' : 'denied'}`;
+        status.innerHTML = allowed ? `${ICONS.check} allowed` : `${ICONS.close} denied`;
+      }
+
+      if (pending === 0) cleanupAndResolve();
+    };
+
+    // One independently approvable collapsible row per tool call.
     calls.forEach((call, idx) => {
       let args = {};
       try { args = JSON.parse(call.function.arguments || '{}'); } catch {}
       const hasArgs = Object.keys(args).length > 0;
-      const isLast  = idx === calls.length - 1;
 
       const item = document.createElement('div');
       item.className = 'tc-item open';
@@ -376,10 +399,11 @@ export function showToolConfirmation(calls) {
             <span class="tc-item-name">${escapeHtml(call.function.name)}</span>
             ${hasArgs ? '' : '<span class="tc-item-noargs">no arguments</span>'}
           </button>
-          ${isLast ? `<span class="tc-actions">
+          <span class="tc-actions">
             <button class="tc-allow">${ICONS.check} allow</button>
             <button class="tc-deny">${ICONS.close} deny</button>
-          </span>` : ''}
+          </span>
+          <span class="tc-status" aria-live="polite"></span>
         </div>
         ${hasArgs ? `<div class="tc-item-args" style="display:block">${formatArgsHtml(args)}</div>` : ''}`;
 
@@ -394,10 +418,8 @@ export function showToolConfirmation(calls) {
         });
       }
 
-      if (isLast) {
-        item.querySelector('.tc-allow').addEventListener('click', () => dismiss(true));
-        item.querySelector('.tc-deny').addEventListener('click',  () => dismiss(false));
-      }
+      item.querySelector('.tc-allow').addEventListener('click', () => decide(idx, true, item));
+      item.querySelector('.tc-deny').addEventListener('click',  () => decide(idx, false, item));
 
       wrap.appendChild(item);
     });
