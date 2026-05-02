@@ -612,18 +612,33 @@ body::before {
   background: var(--code-bg);
   border: 1px solid var(--border);
   border-radius: 7px;
-  font-family: 'JetBrains Mono', monospace;
-  font-size: .73rem;
-  color: var(--text2);
-  white-space: pre-wrap;
-  word-break: break-all;
-  line-height: 1.6;
   max-height: 200px;
   overflow-y: auto;
   animation: fadeUp .12s ease both;
 }
 .tc-item-args::-webkit-scrollbar { width: 3px; }
 .tc-item-args::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+
+.arg-item { margin-bottom: 8px; }
+.arg-item:last-child { margin-bottom: 0; }
+.arg-name {
+  display: block;
+  font-size: .68rem;
+  font-weight: 600;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  color: var(--text2);
+  margin-bottom: 2px;
+}
+.arg-value {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: .74rem;
+  color: var(--text3);
+  white-space: pre-wrap;
+  word-break: break-all;
+  line-height: 1.6;
+  margin: 0;
+}
 
 /* Inline allow / deny actions */
 .tc-actions {
@@ -694,7 +709,7 @@ body::before {
 .tr-summary:hover .tr-chevron { color: var(--text2); }
 
 .tr-tool-name {
-  color: var(--green);
+  color: var(--accent);
   font-weight: 500;
 }
 .tr-status {
@@ -711,18 +726,35 @@ body::before {
   border: 1px solid var(--border);
   border-radius: 7px;
   padding: 10px 12px;
+  animation: fadeUp .15s ease both;
+}
+.tr-section-label {
+  font-size: .68rem;
+  font-weight: 600;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  color: var(--text2);
+  padding: 4px 0 2px;
+}
+.tr-section-label:first-child { padding-top: 0; }
+.tr-args,
+.tr-result {
   font-family: 'JetBrains Mono', monospace;
   font-size: .74rem;
   color: var(--text2);
   white-space: pre-wrap;
   word-break: break-all;
-  max-height: 240px;
+  max-height: 200px;
   overflow-y: auto;
   line-height: 1.6;
-  animation: fadeUp .15s ease both;
+  margin: 0 0 8px;
 }
-.tr-body::-webkit-scrollbar { width: 3px; }
-.tr-body::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+.tr-args { color: var(--text3); padding: 0; background: none; border: none; }
+.tr-result:last-child { margin-bottom: 0; }
+.tr-args::-webkit-scrollbar,
+.tr-result::-webkit-scrollbar { width: 3px; }
+.tr-args::-webkit-scrollbar-thumb,
+.tr-result::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
 
 /* ─── Input Area ────────────────────────────────────────────────────────────── */
 #input-area { border-top: 1px solid var(--border); padding: 14px 20px; background: var(--surface); flex-shrink: 0; }

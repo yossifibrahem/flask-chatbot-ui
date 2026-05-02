@@ -268,18 +268,36 @@ export function finalizeStreamingMessage(contentEl, text) {
   if (text) addCopyFooter(row, () => text);
 }
 
-export function appendToolResult(toolName, result) {
+function formatArgsHtml(args) {
+  return Object.entries(args).map(([k, v]) => {
+    const val = typeof v === 'object' ? JSON.stringify(v) : String(v);
+    return `<div class="arg-item">` +
+      `<span class="arg-name">${escapeHtml(k)}</span>` +
+      `<pre class="arg-value">${escapeHtml(val)}</pre>` +
+      `</div>`;
+  }).join('');
+}
+
+export function appendToolResult(toolName, args, result) {
   const row   = getOrCreateAssistantRow();
   row.querySelector('.msg-footer')?.remove();
   const strip = document.createElement('div');
   strip.className = 'tool-inline';
+
+  const hasArgs = args && Object.keys(args).length > 0;
+  const bodyHtml = hasArgs
+    ? `<div class="tr-section-label">Arguments</div><div class="tr-args">${formatArgsHtml(args)}</div>` +
+      `<div class="tr-section-label">Result</div><pre class="tr-result">${escapeHtml(String(result))}</pre>`
+    : `<pre class="tr-result">${escapeHtml(String(result))}</pre>`;
+
   strip.innerHTML = `
     <button class="tr-summary">
       <span class="tr-chevron">${ICONS.chevronRight}</span>
       <span class="tr-tool-name">${escapeHtml(toolName)}</span>
       <span class="tr-status">${ICONS.checkSmall} completed</span>
     </button>
-    <pre class="tr-body" style="display:none">${escapeHtml(String(result))}</pre>`;
+    <div class="tr-body" style="display:none">${bodyHtml}</div>`;
+
   const btn  = strip.querySelector('.tr-summary');
   const body = strip.querySelector('.tr-body');
   const chev = strip.querySelector('.tr-chevron');
@@ -297,7 +315,7 @@ export function renderAllMessages(displayLog) {
   document.getElementById('messages').innerHTML = '';
   displayLog.forEach(entry => {
     if (entry.type === 'message')     appendMessage(entry.role, entry.content);
-    if (entry.type === 'tool_result') appendToolResult(entry.name, entry.result);
+    if (entry.type === 'tool_result') appendToolResult(entry.name, entry.args, entry.result);
     if (entry.type === 'thinking')    appendThinkingBlock(entry.content);
   });
   scrollToBottom();
@@ -343,7 +361,7 @@ export function showToolConfirmation(calls) {
             <button class="tc-deny">${ICONS.close} deny</button>
           </span>` : ''}
         </div>
-        ${hasArgs ? `<pre class="tc-item-args" style="display:none">${escapeHtml(JSON.stringify(args, null, 2))}</pre>` : ''}`;
+        ${hasArgs ? `<div class="tc-item-args" style="display:none">${formatArgsHtml(args)}</div>` : ''}`;
 
       if (hasArgs) {
         const btn  = item.querySelector('.tc-item-header');

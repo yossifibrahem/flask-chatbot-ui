@@ -175,9 +175,11 @@ async function handleToolCalls(calls, precedingText, precedingReasoning = '') {
 
   for (let i = 0; i < calls.length; i++) {
     const tc     = calls[i];
+    let   args   = {};
+    try { args = JSON.parse(tc.function.arguments || '{}'); } catch {}
     const result = decisions[i] ? await executeTool(tc) : 'Tool execution denied by user.';
-    appendToolResult(tc.function.name, result);
-    state.displayLog.push({ type: 'tool_result', name: tc.function.name, result });
+    appendToolResult(tc.function.name, args, result);
+    state.displayLog.push({ type: 'tool_result', name: tc.function.name, args, result });
     state.messages.push({ role: 'tool', tool_call_id: tc.id, content: result });
   }
 
