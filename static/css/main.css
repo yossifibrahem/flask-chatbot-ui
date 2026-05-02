@@ -567,14 +567,19 @@ body::before {
 
 /* One row per tool call */
 .tc-item {
-  margin-bottom: 6px;
+  margin-bottom: 4px;
+}
+
+.tc-item-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .tc-item-header {
   display: flex;
   align-items: center;
   gap: 7px;
-  width: 100%;
   background: none;
   border: none;
   padding: 0;
@@ -585,6 +590,7 @@ body::before {
   font-family: 'JetBrains Mono', monospace;
   font-size: .73rem;
   user-select: none;
+  min-width: 0;
 }
 .tc-item-header:hover { color: var(--text); }
 
@@ -619,36 +625,45 @@ body::before {
 .tc-item-args::-webkit-scrollbar { width: 3px; }
 .tc-item-args::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
 
-/* Allow / Deny footer */
-.tc-footer {
-  display: flex;
-  gap: 6px;
-  padding: 6px 0 2px;
+/* Inline allow / deny actions */
+.tc-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  margin-left: 4px;
+  flex-shrink: 0;
 }
 .tc-allow, .tc-deny {
-  display: inline-flex; align-items: center; gap: 4px;
-  padding: 4px 12px;
-  border-radius: 5px;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 1px 7px;
+  border-radius: 4px;
   font-family: 'JetBrains Mono', monospace;
-  font-size: .7rem;
-  font-weight: 500;
+  font-size: .68rem;
+  font-weight: 400;
   cursor: pointer;
-  border: 1px solid;
+  border: 1px solid transparent;
+  background: none;
   transition: all .14s;
 }
-.tc-allow svg, .tc-deny svg { width: 9px; height: 9px; }
+.tc-allow svg, .tc-deny svg { width: 8px; height: 8px; }
 .tc-allow {
-  background: rgba(107,184,122,.08);
-  border-color: rgba(107,184,122,.35);
   color: var(--green);
+  border-color: transparent;
 }
-.tc-allow:hover { background: rgba(107,184,122,.2); }
+.tc-allow:hover {
+  background: rgba(107,184,122,.12);
+  border-color: rgba(107,184,122,.3);
+}
 .tc-deny {
-  background: rgba(224,112,112,.07);
-  border-color: rgba(224,112,112,.3);
-  color: var(--red);
+  color: var(--text3);
 }
-.tc-deny:hover { background: rgba(224,112,112,.18); }
+.tc-deny:hover {
+  color: var(--red);
+  background: rgba(224,112,112,.08);
+  border-color: rgba(224,112,112,.25);
+}
 
 /* ─── Tool Result Disclosure ─────────────────────────────────────────────────── */
 .tr-summary {

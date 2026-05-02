@@ -323,19 +323,26 @@ export function showToolConfirmation(calls) {
     };
 
     // One collapsible row per tool call
-    calls.forEach(call => {
+    calls.forEach((call, idx) => {
       let args = {};
       try { args = JSON.parse(call.function.arguments || '{}'); } catch {}
       const hasArgs = Object.keys(args).length > 0;
+      const isLast  = idx === calls.length - 1;
 
       const item = document.createElement('div');
       item.className = 'tc-item';
       item.innerHTML = `
-        <button class="tc-item-header">
-          <span class="tc-item-chevron">${ICONS.chevronRight}</span>
-          <span class="tc-item-name">${escapeHtml(call.function.name)}</span>
-          ${hasArgs ? '' : '<span class="tc-item-noargs">no arguments</span>'}
-        </button>
+        <div class="tc-item-row">
+          <button class="tc-item-header">
+            <span class="tc-item-chevron">${ICONS.chevronRight}</span>
+            <span class="tc-item-name">${escapeHtml(call.function.name)}</span>
+            ${hasArgs ? '' : '<span class="tc-item-noargs">no arguments</span>'}
+          </button>
+          ${isLast ? `<span class="tc-actions">
+            <button class="tc-allow">${ICONS.check} allow</button>
+            <button class="tc-deny">${ICONS.close} deny</button>
+          </span>` : ''}
+        </div>
         ${hasArgs ? `<pre class="tc-item-args" style="display:none">${escapeHtml(JSON.stringify(args, null, 2))}</pre>` : ''}`;
 
       if (hasArgs) {
@@ -350,17 +357,12 @@ export function showToolConfirmation(calls) {
         });
       }
 
+      if (isLast) {
+        item.querySelector('.tc-allow').addEventListener('click', () => dismiss(true));
+        item.querySelector('.tc-deny').addEventListener('click',  () => dismiss(false));
+      }
+
       wrap.appendChild(item);
     });
-
-    // Single allow / deny for all calls
-    const footer = document.createElement('div');
-    footer.className = 'tc-footer';
-    footer.innerHTML = `
-      <button class="tc-allow">${ICONS.check} Allow</button>
-      <button class="tc-deny">${ICONS.close} Deny</button>`;
-    footer.querySelector('.tc-allow').addEventListener('click', () => dismiss(true));
-    footer.querySelector('.tc-deny').addEventListener('click',  () => dismiss(false));
-    wrap.appendChild(footer);
   });
 }
