@@ -4,7 +4,7 @@ import { api }   from './api.js';
 import { state } from './state.js';
 import {
   createStreamingMessage, appendMessage, appendToolResult,
-  showToolConfirmation, finalizeStreamingMessage, escapeHtml, scrollToBottom,
+  showToolConfirmation, finalizeStreamingMessage, escapeHtml, scrollToBottom, pinToBottom,
   createThinkingBlock, updateThinkingBlock, finalizeThinkingBlock,
 } from './renderer.js';
 import { applyMarkdown } from './markdown.js';
@@ -58,6 +58,7 @@ export async function sendMessage(userText) {
   state.messages.push({ role: 'user', content: userText });
   state.displayLog.push({ type: 'message', role: 'user', content: userText });
   appendMessage('user', userText);
+  pinToBottom(); // User sent a message — always snap to bottom
 
   await runChatLoop();
   await persistConversation();

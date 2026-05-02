@@ -12,6 +12,7 @@ import { loadSettings, saveSettings, fetchModels, renderModelList, updateModelBa
 import { loadConversationList, openConversation, createNewConversation, persistConversation } from './conversations.js';
 import { loadMcpConfig, saveMcpConfig, reloadTools, renderToolList, loadCachedTools } from './mcp.js';
 import { sendMessage, setStreaming } from './chat.js';
+import { initScrollTracking } from './renderer.js';
 
 // ── Event binding ─────────────────────────────────────────────────────────────
 
@@ -118,6 +119,7 @@ function bindEvents() {
 
 (async () => {
   bindEvents();
+  initScrollTracking();
   loadSettings();
   loadCachedTools();
   await loadConversationList();
