@@ -10,7 +10,7 @@ import { api }      from './api.js';
 import { openModal, closeModal, toggleSidebar, autoResize, updateCharCount, showToast } from './ui.js';
 import { loadSettings, saveSettings, fetchModels, renderModelList, updateModelBadge }   from './settings.js';
 import { loadConversationList, openConversation, createNewConversation, persistConversation } from './conversations.js';
-import { loadMcpConfig, saveMcpConfig, reloadTools, renderToolList } from './mcp.js';
+import { loadMcpConfig, saveMcpConfig, reloadTools, renderToolList, loadCachedTools } from './mcp.js';
 import { sendMessage, setStreaming } from './chat.js';
 
 // ── Event binding ─────────────────────────────────────────────────────────────
@@ -119,7 +119,7 @@ function bindEvents() {
 (async () => {
   bindEvents();
   loadSettings();
-  renderToolList();
+  loadCachedTools();
   await loadConversationList();
   await loadMcpConfig();
 

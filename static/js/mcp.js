@@ -23,6 +23,15 @@ export async function saveMcpConfig() {
   }
 }
 
+export function loadCachedTools() {
+  const cached = storage.get(STORAGE_KEYS.mcpTools);
+  if (cached?.length) {
+    state.mcpTools = cached;
+    renderToolList();
+  }
+}
+
+
 export async function reloadTools() {
   showStatus('mcp-status', 'Loading tools…', 'ok');
   try {
