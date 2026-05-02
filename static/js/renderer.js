@@ -367,11 +367,11 @@ export function showToolConfirmation(calls) {
       const isLast  = idx === calls.length - 1;
 
       const item = document.createElement('div');
-      item.className = 'tc-item';
+      item.className = 'tc-item open';
       item.innerHTML = `
         <div class="tc-item-row">
           <button class="tc-item-header">
-            <span class="tc-item-chevron">${ICONS.chevronRight}</span>
+            <span class="tc-item-chevron">${ICONS.chevronDown}</span>
             <span class="tool-icon">${ICONS.toolSmall}</span>
             <span class="tc-item-name">${escapeHtml(call.function.name)}</span>
             ${hasArgs ? '' : '<span class="tc-item-noargs">no arguments</span>'}
@@ -381,7 +381,7 @@ export function showToolConfirmation(calls) {
             <button class="tc-deny">${ICONS.close} deny</button>
           </span>` : ''}
         </div>
-        ${hasArgs ? `<div class="tc-item-args" style="display:none">${formatArgsHtml(args)}</div>` : ''}`;
+        ${hasArgs ? `<div class="tc-item-args" style="display:block">${formatArgsHtml(args)}</div>` : ''}`;
 
       if (hasArgs) {
         const btn  = item.querySelector('.tc-item-header');
