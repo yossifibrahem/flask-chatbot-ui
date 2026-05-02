@@ -31,9 +31,33 @@ function formatTime() {
   return new Date().toLocaleTimeString('en', { hour: '2-digit', minute: '2-digit' });
 }
 
-export function scrollToBottom() {
-  const el = document.getElementById('messages');
-  requestAnimationFrame(() => { el.scrollTop = el.scrollHeight; });
+const BOTTOM_THRESHOLD = 32;
+let stickToBottom = true;
+
+function isNearBottom(el) {
+  return el.scrollHeight - el.scrollTop - el.clientHeight <= BOTTOM_THRESHOLD;
+}
+
+function messagesEl() {
+  return document.getElementById('messages');
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  messagesEl()?.addEventListener('scroll', (e) => {
+    stickToBottom = isNearBottom(e.currentTarget);
+  }, { passive: true });
+});
+
+export function scrollToBottom(force = false) {
+  const el = messagesEl();
+  if (!el || (!force && !stickToBottom)) return;
+
+  requestAnimationFrame(() => {
+    if (force || stickToBottom) {
+      el.scrollTop = el.scrollHeight;
+      stickToBottom = true;
+    }
+  });
 }
 
 // ── Empty state ───────────────────────────────────────────────────────────────
@@ -70,7 +94,6 @@ function createMessageRow(avatarClass, avatarIcon, roleLabel) {
     </div>`;
 
   document.getElementById('messages').appendChild(row);
-  scrollToBottom();
   return row;
 }
 
@@ -137,7 +160,6 @@ export function createThinkingBlock() {
     block.dataset.manualToggle = '1';
     chev.innerHTML = open ? ICONS.chevronDown : ICONS.chevronRight;
     body.style.display = open ? 'block' : 'none';
-    if (open) scrollToBottom();
   });
 
   // Default: expanded while streaming
@@ -201,7 +223,6 @@ export function appendThinkingBlock(reasoningText) {
     const open = block.classList.toggle('open');
     chev.innerHTML = open ? ICONS.chevronDown : ICONS.chevronRight;
     body.style.display = open ? 'block' : 'none';
-    if (open) scrollToBottom();
   });
 
   row.appendChild(block);
@@ -239,6 +260,7 @@ export function appendMessage(role, content) {
 
   const rawText = typeof content === 'string' ? content : content.map(p => p.text || '').join('\n');
   addCopyFooter(row, () => rawText);
+  scrollToBottom(isUser);
 
   return contentEl;
 }
@@ -303,7 +325,6 @@ export function appendToolResult(toolName, args, result) {
     const open = strip.classList.toggle('open');
     chev.innerHTML = open ? ICONS.chevronDown : ICONS.chevronRight;
     body.style.display = open ? 'block' : 'none';
-    if (open) scrollToBottom();
   });
   row.appendChild(strip);
   scrollToBottom();
@@ -316,7 +337,7 @@ export function renderAllMessages(displayLog) {
     if (entry.type === 'tool_result') appendToolResult(entry.name, entry.args, entry.result);
     if (entry.type === 'thinking')    appendThinkingBlock(entry.content);
   });
-  scrollToBottom();
+  scrollToBottom(true);
 }
 
 // ── Tool confirmation dialog ──────────────────────────────────────────────────
@@ -370,7 +391,6 @@ export function showToolConfirmation(calls) {
           const open = item.classList.toggle('open');
           chev.innerHTML = open ? ICONS.chevronDown : ICONS.chevronRight;
           pre.style.display = open ? 'block' : 'none';
-          if (open) scrollToBottom();
         });
       }
 
