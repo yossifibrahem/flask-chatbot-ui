@@ -91,20 +91,6 @@ function prepareAssistantRow() {
   return row;
 }
 
-function addCopyFooter(row, getText) {
-  const footer = createElement('div', { className: 'msg-footer' });
-  const copyBtn = createElement('button', { className: 'msg-action-btn', html: `${ICONS.copy} copy` });
-
-  copyBtn.addEventListener('click', () => {
-    navigator.clipboard.writeText(getText());
-    copyBtn.textContent = '✓ copied';
-    setTimeout(() => { copyBtn.innerHTML = `${ICONS.copy} copy`; }, 1500);
-  });
-
-  footer.appendChild(copyBtn);
-  row.appendChild(footer);
-}
-
 function addUserFooter(row, getText, logIndex, getContent = () => null) {
   const footer = createElement('div', { className: 'msg-footer' });
 

@@ -408,7 +408,6 @@ body::before {
 .msg-avatar { width: 22px; height: 22px; border-radius: 5px; display: grid; place-items: center; font-size: .7rem; flex-shrink: 0; }
 .msg-avatar.user-av { background: var(--surface3); color: var(--text2); }
 .msg-avatar.ai-av   { background: var(--accent-dim); color: var(--accent); }
-.msg-avatar.tool-av { background: rgba(107,184,122,.12); color: var(--green); }
 .msg-avatar svg { width: 11px; height: 11px; }
 
 .msg-role-label { font-family: var(--font-mono); font-size: .65rem; color: var(--text3); letter-spacing: .6px; text-transform: uppercase; }
@@ -479,40 +478,9 @@ body::before {
 
 .msg-row.user-row .msg-content { color: var(--text); }
 
-.msg-divider { max-width: 820px; margin: 2px auto 0; height: 1px; background: var(--border); opacity: 0.4; }
-
 /* Streaming cursor */
 .cursor-blink::after { content: '▋'; animation: blink .9s step-end infinite; color: var(--accent); margin-left: 2px; }
 @keyframes blink { 0%,100% { opacity: 1; } 50% { opacity: 0; } }
-
-/* ─── Shared disclosure button (thinking, tool result, tool confirm) ─────── */
-.disclosure-btn {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  width: 100%;
-  padding: 0;
-  background: none;
-  border: none;
-  cursor: pointer;
-  text-align: left;
-  color: var(--text2);
-  font-size: .73rem;
-  font-family: var(--font-mono);
-  font-weight: 400;
-  transition: color .14s;
-  user-select: none;
-}
-.disclosure-btn:hover { color: var(--text); }
-
-.disclosure-chevron {
-  color: var(--text3);
-  display: inline-flex;
-  align-items: center;
-  flex-shrink: 0;
-  transition: color .14s;
-}
-.disclosure-btn:hover .disclosure-chevron { color: var(--text2); }
 
 /* ─── Thinking / Reasoning Block ────────────────────────────────────────────── */
 .thinking-block {
@@ -719,7 +687,6 @@ body::before {
 .tc-deny:hover { color: var(--red); background: rgba(224,112,112,.08); border-color: rgba(224,112,112,.25); }
 
 /* ─── Tool Result Disclosure ─────────────────────────────────────────────────── */
-/* .tr-summary extends .disclosure-btn; .tr-chevron extends .disclosure-chevron */
 .tr-summary {
   display: flex;
   align-items: center;
@@ -843,7 +810,7 @@ body::before {
   display: grid; place-items: center;
   border-radius: 8px; transition: color .15s, background .15s;
 }
-#attach-btn:hover { color: var(--text); background: var(--hover); }
+#attach-btn:hover { color: var(--text); }
 #attach-btn svg { width: 16px; height: 16px; }
 
 #user-input {
@@ -974,8 +941,6 @@ body::before {
 .field input[type="password"] { letter-spacing: 2px; }
 .field textarea { resize: vertical; min-height: 90px; }
 .field-note { font-family: var(--font-mono); font-size: .63rem; color: var(--text3); margin-top: 5px; line-height: 1.5; }
-.field-row { display: flex; gap: 8px; }
-.field-row .field { flex: 1; }
 .textarea-tall { min-height: 110px; }
 
 /* ─── Layout helpers ────────────────────────────────────────────────────────── */
@@ -1019,7 +984,6 @@ body::before {
 .tool-card { background: var(--surface2); border: 1px solid var(--border); border-radius: 9px; padding: 12px 14px; margin-bottom: 7px; }
 .tool-card-header { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
 .tool-card-name { font-family: var(--font-mono); font-size: .78rem; color: var(--accent); }
-.tool-card-server { font-family: var(--font-mono); font-size: .62rem; color: var(--text3); background: var(--surface3); padding: 2px 7px; border-radius: 10px; }
 .tool-card-desc { font-size: .78rem; color: var(--text2); line-height: 1.5; }
 .no-tools-label { font-family: var(--font-mono); font-size: .75rem; color: var(--text3); }
 

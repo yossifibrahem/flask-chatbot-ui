@@ -3,15 +3,14 @@
 // This module's only job is to wire UI events to domain functions.
 // No business logic lives here.
 
-import { state, STORAGE_KEYS } from './state.js';
+import { STORAGE_KEYS } from './state.js';
 import { storage }  from './storage.js';
-import { api }      from './api.js';
 
 import { openModal, closeModal, toggleSidebar, autoResize, updateCharCount } from './ui.js';
 import { loadSettings, saveSettings, fetchModels }                           from './settings.js';
 import { loadConversationList, openConversation, createNewConversation, persistConversation } from './conversations.js';
 import { loadMcpConfig, saveMcpConfig, reloadTools, loadCachedTools } from './mcp.js';
-import { sendMessage, setStreaming, stopAssistantTurn, editAndResend, regenerateFrom, initImageAttachments } from './chat.js';
+import { sendMessage, stopAssistantTurn, editAndResend, regenerateFrom, initImageAttachments } from './chat.js';
 import { clearMessages } from './renderer.js';
 
 // ── Event binding ─────────────────────────────────────────────────────────────
