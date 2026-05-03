@@ -28,7 +28,7 @@
   --accent-border-dim: rgba(201,169,110,.25);
 }
 
-html, body { height: 100%; overflow: hidden; }
+html, body { height: 100dvh; overflow: hidden; }
 
 body {
   font-family: var(--font-sans);
@@ -57,8 +57,7 @@ body::before {
   border-right: 1px solid var(--border);
   display: flex;
   flex-direction: column;
-  height: 100vh;
-  transition: transform .28s cubic-bezier(.4,0,.2,1), width .28s cubic-bezier(.4,0,.2,1);
+  height: 100dvh;
   position: relative;
   z-index: 10;
 }
@@ -219,12 +218,13 @@ body::before {
 .sidebar-action:hover svg { color: var(--text2); }
 
 /* ─── Main ─────────────────────────────────────────────────────────────────── */
-#main { flex: 1; display: flex; flex-direction: column; height: 100vh; overflow: hidden; position: relative; transition: margin-left .28s cubic-bezier(.4,0,.2,1); }
+#main { flex: 1; display: flex; flex-direction: column; height: 100dvh; overflow: hidden; position: relative; transition: margin-left .28s cubic-bezier(.4,0,.2,1); }
 
 /* ─── Chat Header ──────────────────────────────────────────────────────────── */
 #chat-header {
   padding: 0 20px;
-  height: 54px;
+  padding-top: env(safe-area-inset-top, 0px);
+  height: calc(54px + env(safe-area-inset-top, 0px));
   border-bottom: 1px solid var(--border);
   display: flex;
   align-items: center;
@@ -763,7 +763,7 @@ body::before {
 }
 
 /* ─── Input Area ────────────────────────────────────────────────────────────── */
-#input-area { border-top: 1px solid var(--border); padding: 14px 20px; background: var(--surface); flex-shrink: 0; }
+#input-area { border-top: 1px solid var(--border); padding: 14px 20px; padding-bottom: calc(14px + env(safe-area-inset-bottom, 0px)); background: var(--surface); flex-shrink: 0; }
 
 /* ── Image preview bar ── */
 #image-preview-bar {
@@ -1066,7 +1066,7 @@ body::before {
   #main { margin-left: 0 !important; }
 
   /* ── Chat header ── */
-  #chat-header { padding: 0 12px; gap: 8px; height: 50px; }
+  #chat-header { padding: env(safe-area-inset-top, 0px) 12px 0; gap: 8px; height: calc(50px + env(safe-area-inset-top, 0px)); }
   #chat-title-input { font-size: .82rem; }
 
   /* Shrink model badge so it doesn't overflow narrow headers */
@@ -1100,7 +1100,7 @@ body::before {
   .msg-content pre code { font-size: .75rem; }
 
   /* ── Input area ── */
-  #input-area { padding: 10px 12px; }
+  #input-area { padding: 10px 12px; padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px)); }
   #image-preview-bar { margin-bottom: 6px; }
 
   /* Keyboard hint is irrelevant on mobile — hide it */
@@ -1165,8 +1165,8 @@ body::before {
   #model-badge { max-width: 90px; font-size: .6rem; }
   #model-badge-label { max-width: 60px; }
   .msg-row { padding: 10px 10px 4px; }
-  #input-area { padding: 8px 10px; }
-  #chat-header { padding: 0 10px; gap: 6px; }
+  #input-area { padding: 8px 10px; padding-bottom: calc(8px + env(safe-area-inset-bottom, 0px)); }
+  #chat-header { padding: env(safe-area-inset-top, 0px) 10px 0; gap: 6px; height: calc(46px + env(safe-area-inset-top, 0px)); }
 }
 /* ─── MCP Server Groups & Toggle Switches ───────────────────────────────────── */
 

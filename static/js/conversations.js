@@ -5,6 +5,7 @@ import { state }       from './state.js';
 import { storage, }    from './storage.js';
 import { STORAGE_KEYS } from './state.js';
 import { clearMessages, renderAllMessages, escapeHtml } from './renderer.js';
+import { toggleSidebar } from './ui.js';
 
 // ── Sidebar list ──────────────────────────────────────────────────────────────
 
@@ -61,6 +62,7 @@ export async function openConversation(id) {
   document.getElementById('chat-title-input').value = data.title || '';
   renderAllMessages(state.displayLog);
   loadConversationList();
+  if (window.innerWidth <= 768) toggleSidebar(false);
 }
 
 export async function createNewConversation() {
