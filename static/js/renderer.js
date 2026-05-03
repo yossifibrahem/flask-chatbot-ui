@@ -1,50 +1,36 @@
 // DOM rendering — the only module that touches #messages.
-// Nothing here knows about API calls or state persistence.
+// API calls, persistence, and chat orchestration live elsewhere.
 
 import { applyMarkdown } from './markdown.js';
+import { $, createElement, remove, setVisible } from './dom.js';
+import { ICONS } from './icons.js';
 
-// ── Reusable SVG icons ────────────────────────────────────────────────────────
-
-const ICONS = {
-  user:         `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>`,
-  ai:           `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>`,
-  tool:         `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>`,
-  info:         `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>`,
-  check:        `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`,
-  close:        `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>`,
-  copy:         `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>`,
-  chevronRight: `<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>`,
-  chevronDown:  `<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>`,
-  brain:        `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6"/><path d="M10 22h4"/><path d="M12 2a7 7 0 0 0-4 12c0 1.5.5 2 1 3h6c.5-1 1-1.5 1-3a7 7 0 0 0-4-12z"/></svg>`,
-  toolSmall:    `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>`,
-};
-
-// ── Utilities ─────────────────────────────────────────────────────────────────
-
-export function escapeHtml(str) {
-  return String(str)
-    .replace(/&/g, '&amp;').replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-}
-
-function formatTime() {
-  return new Date().toLocaleTimeString('en', { hour: '2-digit', minute: '2-digit' });
-}
+const EMPTY_STATE_PROMPTS = [
+  { tag: 'EXPLAIN', label: 'How do transformers work in machine learning?', prompt: 'Explain how transformers work in machine learning' },
+  { tag: 'CODE',    label: 'Write a Python function to parse JSON safely',   prompt: 'Write a Python function to parse JSON with error handling' },
+  { tag: 'COMPARE', label: 'REST vs GraphQL — key differences',              prompt: 'What are the key differences between REST and GraphQL APIs?' },
+  { tag: 'WRITE',   label: 'Executive summary for a product launch',          prompt: 'Help me write a concise executive summary for a product launch' },
+];
 
 const BOTTOM_THRESHOLD = 32;
 let stickToBottom = true;
+let activeToolConfirmation = null;
 
-function isNearBottom(el) {
-  return el.scrollHeight - el.scrollTop - el.clientHeight <= BOTTOM_THRESHOLD;
+export function escapeHtml(value) {
+  return String(value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
 }
 
-function messagesEl() {
-  return document.getElementById('messages');
-}
+const messagesEl = () => $('#messages');
+const formatTime = () => new Date().toLocaleTimeString('en', { hour: '2-digit', minute: '2-digit' });
+const isNearBottom = el => el.scrollHeight - el.scrollTop - el.clientHeight <= BOTTOM_THRESHOLD;
 
 document.addEventListener('DOMContentLoaded', () => {
-  messagesEl()?.addEventListener('scroll', (e) => {
-    stickToBottom = isNearBottom(e.currentTarget);
+  messagesEl()?.addEventListener('scroll', event => {
+    stickToBottom = isNearBottom(event.currentTarget);
   }, { passive: true });
 });
 
@@ -60,20 +46,13 @@ export function scrollToBottom(force = false) {
   });
 }
 
-// ── Empty state ───────────────────────────────────────────────────────────────
-
-const EMPTY_STATE_PROMPTS = [
-  { tag: 'EXPLAIN', label: 'How do transformers work in machine learning?', prompt: 'Explain how transformers work in machine learning' },
-  { tag: 'CODE',    label: 'Write a Python function to parse JSON safely',   prompt: 'Write a Python function to parse JSON with error handling' },
-  { tag: 'COMPARE', label: 'REST vs GraphQL — key differences',              prompt: 'What are the key differences between REST and GraphQL APIs?' },
-  { tag: 'WRITE',   label: 'Executive summary for a product launch',          prompt: 'Help me write a concise executive summary for a product launch' },
-];
-
 export function clearMessages() {
-  const promptsHtml = EMPTY_STATE_PROMPTS.map(p =>
-    `<div class="es-prompt" data-prompt="${escapeHtml(p.prompt)}"><strong>${p.tag}</strong>${p.label}</div>`
-  ).join('');
-  document.getElementById('messages').innerHTML = `
+  const promptsHtml = EMPTY_STATE_PROMPTS.map(prompt => `
+    <div class="es-prompt" data-prompt="${escapeHtml(prompt.prompt)}">
+      <strong>${prompt.tag}</strong>${escapeHtml(prompt.label)}
+    </div>`).join('');
+
+  messagesEl().innerHTML = `
     <div id="empty-state">
       <div class="es-logo">Lu<em>men</em></div>
       <div class="es-sub">Your AI assistant — ready to help</div>
@@ -81,11 +60,10 @@ export function clearMessages() {
     </div>`;
 }
 
-function createMessageRow(avatarClass, avatarIcon, roleLabel) {
-  document.getElementById('empty-state')?.remove();
+function createMessageRow({ avatarClass, avatarIcon, roleLabel, isUser = false }) {
+  remove('#empty-state');
 
-  const row = document.createElement('div');
-  row.className = `msg-row${roleLabel === 'You' ? ' user-row' : ''}`;
+  const row = createElement('div', { className: `msg-row${isUser ? ' user-row' : ''}` });
   row.innerHTML = `
     <div class="msg-meta">
       <div class="msg-avatar ${avatarClass}">${avatarIcon}</div>
@@ -93,222 +71,228 @@ function createMessageRow(avatarClass, avatarIcon, roleLabel) {
       <span class="msg-time">${formatTime()}</span>
     </div>`;
 
-  document.getElementById('messages').appendChild(row);
+  messagesEl().appendChild(row);
   return row;
 }
 
-// ── Get or create the last assistant row (used by tools to append inline) ─────
-
 function getOrCreateAssistantRow() {
-  // Walk backwards through #messages children to find the last msg-row.
-  // Only reuse it if it is an assistant row AND it is the very last row
-  // (i.e. no user message came after it).
-  const msgs     = document.getElementById('messages');
-  const children = [...msgs.children].filter(el => el.classList.contains('msg-row'));
-  const last     = children[children.length - 1];
-  if (last && !last.classList.contains('user-row')) return last;
-  return createMessageRow('ai-av', ICONS.ai, 'Assistant');
+  const rows = [...messagesEl().children].filter(child => child.classList.contains('msg-row'));
+  const last = rows.at(-1);
+  return last && !last.classList.contains('user-row')
+    ? last
+    : createMessageRow({ avatarClass: 'ai-av', avatarIcon: ICONS.ai, roleLabel: 'Assistant' });
 }
 
-// ── Copy footer ───────────────────────────────────────────────────────────────
+function prepareAssistantRow() {
+  const row = getOrCreateAssistantRow();
+  row.querySelector('.msg-footer')?.remove();
+  return row;
+}
 
 function addCopyFooter(row, getText) {
-  const footer  = document.createElement('div');
-  footer.className = 'msg-footer';
+  const footer = createElement('div', { className: 'msg-footer' });
+  const copyBtn = createElement('button', { className: 'msg-action-btn', html: `${ICONS.copy} copy` });
 
-  const copyBtn = document.createElement('button');
-  copyBtn.className = 'msg-action-btn';
-  copyBtn.innerHTML = `${ICONS.copy} copy`;
-  copyBtn.onclick = () => {
+  copyBtn.addEventListener('click', () => {
     navigator.clipboard.writeText(getText());
     copyBtn.textContent = '✓ copied';
     setTimeout(() => { copyBtn.innerHTML = `${ICONS.copy} copy`; }, 1500);
-  };
+  });
 
   footer.appendChild(copyBtn);
   row.appendChild(footer);
 }
 
-// ── Thinking / Reasoning block ────────────────────────────────────────────────
+function toggleCollapsible(block, body, chevron) {
+  const isOpen = block.classList.toggle('open');
+  chevron.innerHTML = isOpen ? ICONS.chevronDown : ICONS.chevronRight;
+  setVisible(body, isOpen);
+  return isOpen;
+}
 
-/**
- * Creates a collapsible "Thinking…" block inside the current assistant row.
- * Returns the <pre> element that streaming text should be written into.
- */
-export function createThinkingBlock() {
-  const row = getOrCreateAssistantRow();
-  row.querySelector('.msg-footer')?.remove();
+function attachCollapsible(block, { headerSelector, bodySelector, chevronSelector, markManualToggle = false }) {
+  const header = block.querySelector(headerSelector);
+  const body = block.querySelector(bodySelector);
+  const chevron = block.querySelector(chevronSelector);
 
-  const block = document.createElement('div');
-  block.className = 'thinking-block thinking-streaming';
-  block.innerHTML = `
+  header?.addEventListener('click', () => {
+    if (markManualToggle) block.dataset.manualToggle = '1';
+    toggleCollapsible(block, body, chevron);
+  });
+}
+
+function createThinkingMarkup({ label, chevron, body = '', streaming = false, display = 'none' }) {
+  return `
     <button class="thinking-header">
-      <span class="thinking-chevron">${ICONS.chevronDown}</span>
+      <span class="thinking-chevron">${chevron}</span>
       <span class="thinking-icon">${ICONS.brain}</span>
-      <span class="thinking-label">Thinking…</span>
-      <span class="thinking-pulse"></span>
+      <span class="thinking-label">${label}</span>
+      ${streaming ? '<span class="thinking-pulse"></span>' : ''}
     </button>
-    <pre class="thinking-body"></pre>`;
+    <pre class="thinking-body" style="display:${display}">${body}</pre>`;
+}
 
-  const btn  = block.querySelector('.thinking-header');
-  const body = block.querySelector('.thinking-body');
-  const chev = block.querySelector('.thinking-chevron');
-
-  btn.addEventListener('click', () => {
-    const open = block.classList.toggle('open');
-    // When manually toggled during streaming keep it open; override closed
-    block.dataset.manualToggle = '1';
-    chev.innerHTML = open ? ICONS.chevronDown : ICONS.chevronRight;
-    body.style.display = open ? 'block' : 'none';
+export function createThinkingBlock() {
+  const row = prepareAssistantRow();
+  const block = createElement('div', {
+    className: 'thinking-block thinking-streaming open',
+    html: createThinkingMarkup({ label: 'Thinking…', chevron: ICONS.chevronDown, streaming: true, display: 'block' }),
   });
 
-  // Default: expanded while streaming
-  block.classList.add('open');
-  body.style.display = 'block';
+  attachCollapsible(block, {
+    headerSelector: '.thinking-header',
+    bodySelector: '.thinking-body',
+    chevronSelector: '.thinking-chevron',
+    markManualToggle: true,
+  });
 
   row.appendChild(block);
   scrollToBottom();
-  return body;
+  return block.querySelector('.thinking-body');
 }
 
-/** Append a chunk of reasoning text to the streaming thinking body. */
 export function updateThinkingBlock(bodyEl, text) {
   bodyEl.textContent = text;
   scrollToBottom();
 }
 
-/**
- * Called once reasoning is complete — removes pulse, updates label,
- * and collapses the block.
- */
 export function finalizeThinkingBlock(bodyEl, fullText) {
   const block = bodyEl.closest('.thinking-block');
   if (!block) return;
+
   block.classList.remove('thinking-streaming');
   block.querySelector('.thinking-label').textContent = 'Thought process';
   block.querySelector('.thinking-pulse')?.remove();
   bodyEl.textContent = fullText;
 
-  // Auto-collapse after streaming unless the user manually toggled it
   if (!block.dataset.manualToggle) {
     block.classList.remove('open');
     block.querySelector('.thinking-chevron').innerHTML = ICONS.chevronRight;
-    bodyEl.style.display = 'none';
+    setVisible(bodyEl, false);
   }
 }
 
-/**
- * Renders a static (already-complete) thinking block from the display log.
- */
 export function appendThinkingBlock(reasoningText) {
   if (!reasoningText) return;
-  const row = getOrCreateAssistantRow();
-  row.querySelector('.msg-footer')?.remove();
 
-  const block = document.createElement('div');
-  block.className = 'thinking-block';
-  block.innerHTML = `
-    <button class="thinking-header">
-      <span class="thinking-chevron">${ICONS.chevronRight}</span>
-      <span class="thinking-icon">${ICONS.brain}</span>
-      <span class="thinking-label">Thought process</span>
-    </button>
-    <pre class="thinking-body" style="display:none">${escapeHtml(reasoningText)}</pre>`;
+  const row = prepareAssistantRow();
+  const block = createElement('div', {
+    className: 'thinking-block',
+    html: createThinkingMarkup({
+      label: 'Thought process',
+      chevron: ICONS.chevronRight,
+      body: escapeHtml(reasoningText),
+    }),
+  });
 
-  const btn  = block.querySelector('.thinking-header');
-  const body = block.querySelector('.thinking-body');
-  const chev = block.querySelector('.thinking-chevron');
-
-  btn.addEventListener('click', () => {
-    const open = block.classList.toggle('open');
-    chev.innerHTML = open ? ICONS.chevronDown : ICONS.chevronRight;
-    body.style.display = open ? 'block' : 'none';
+  attachCollapsible(block, {
+    headerSelector: '.thinking-header',
+    bodySelector: '.thinking-body',
+    chevronSelector: '.thinking-chevron',
   });
 
   row.appendChild(block);
   scrollToBottom();
 }
 
-// ── Public renderers ──────────────────────────────────────────────────────────
-
-export function appendMessage(role, content) {
-  if (!content) return;
-  const isUser = role === 'user';
-  // For assistant messages reuse the current assistant row so that tool
-  // results and follow-up text are grouped into the same bubble on replay.
-  const row = isUser
-    ? createMessageRow('user-av', ICONS.user, 'You')
-    : getOrCreateAssistantRow();
-  // Remove any stale copy footer — it will be re-added below
-  row.querySelector('.msg-footer')?.remove();
-
-  const contentEl = document.createElement('div');
-  contentEl.className = 'msg-content';
-
+function appendContentParts(contentEl, content) {
   if (typeof content === 'string') {
     applyMarkdown(contentEl, content);
-  } else if (Array.isArray(content)) {
-    content.forEach(part => {
-      if (part.type === 'text') {
-        const chunk = document.createElement('div');
-        applyMarkdown(chunk, part.text);
-        contentEl.appendChild(chunk);
-      }
-    });
+    return;
   }
+
+  if (!Array.isArray(content)) return;
+  content
+    .filter(part => part.type === 'text')
+    .forEach(part => {
+      const chunk = createElement('div');
+      applyMarkdown(chunk, part.text);
+      contentEl.appendChild(chunk);
+    });
+}
+
+function getRawText(content) {
+  if (typeof content === 'string') return content;
+  if (!Array.isArray(content)) return '';
+  return content.map(part => part.text || '').join('\n');
+}
+
+export function appendMessage(role, content) {
+  if (!content) return null;
+
+  const isUser = role === 'user';
+  const row = isUser
+    ? createMessageRow({ avatarClass: 'user-av', avatarIcon: ICONS.user, roleLabel: 'You', isUser: true })
+    : prepareAssistantRow();
+
+  row.querySelector('.msg-footer')?.remove();
+
+  const contentEl = createElement('div', { className: 'msg-content' });
+  appendContentParts(contentEl, content);
   row.appendChild(contentEl);
 
-  const rawText = typeof content === 'string' ? content : content.map(p => p.text || '').join('\n');
-  addCopyFooter(row, () => rawText);
+  addCopyFooter(row, () => getRawText(content));
   scrollToBottom(isUser);
-
   return contentEl;
 }
 
 export function createStreamingMessage() {
-  // Reuse the last assistant row so tools + follow-up text stay grouped
-  const row = getOrCreateAssistantRow();
-  // Remove any copy footer — it will be re-added by finalizeStreamingMessage
-  row.querySelector('.msg-footer')?.remove();
-  const contentEl = document.createElement('div');
-  contentEl.className = 'msg-content cursor-blink';
-  contentEl.innerHTML = '&nbsp;';
+  const row = prepareAssistantRow();
+  const contentEl = createElement('div', { className: 'msg-content cursor-blink', html: '&nbsp;' });
   row.appendChild(contentEl);
   scrollToBottom();
   return contentEl;
 }
 
-/** Called by chat.js once streaming is done — removes cursor and adds the copy footer. */
 export function finalizeStreamingMessage(contentEl, text) {
   contentEl.classList.remove('cursor-blink');
   applyMarkdown(contentEl, text);
-  // Always replace any existing copy footer so it stays at the bottom
+
   const row = contentEl.parentElement;
   row.querySelector('.msg-footer')?.remove();
   if (text) addCopyFooter(row, () => text);
 }
 
+function normalizeBlockText(value) {
+  return String(value ?? '')
+    .replace(/\r\n?/g, '\n')
+    .replace(/^\s*\n+/, '')
+    .replace(/\n+\s*$/, '');
+}
+
+function formatToolValue(value) {
+  if (value == null) return '';
+  if (typeof value === 'object') {
+    return normalizeBlockText(JSON.stringify(value, null, 2));
+  }
+  return normalizeBlockText(value);
+}
+
 function formatArgsHtml(args) {
-  return Object.entries(args).map(([k, v]) => {
-    const val = typeof v === 'object' ? JSON.stringify(v) : String(v);
-    return `<div class="arg-item">` +
-      `<span class="arg-name">${escapeHtml(k)}</span>` +
-      `<pre class="arg-value">${escapeHtml(val)}</pre>` +
-      `</div>`;
-  }).join('');
+  return Object.entries(args).map(([key, value]) => `
+    <div class="arg-item">
+      <span class="arg-name">${escapeHtml(key)}</span>
+      <pre class="arg-value">${escapeHtml(formatToolValue(value))}</pre>
+    </div>`).join('');
+}
+
+function createToolResultBody(args, result) {
+  const hasArgs = args && Object.keys(args).length > 0;
+  const resultHtml = `<div class="tr-section"><div class="tr-section-label">Result</div><pre class="tr-result">${escapeHtml(formatToolValue(result))}</pre></div>`;
+
+  if (!hasArgs) return resultHtml;
+
+  return `
+    <div class="tr-section">
+      <div class="tr-section-label">Arguments</div>
+      <div class="tr-args">${formatArgsHtml(args)}</div>
+    </div>
+    ${resultHtml}`;
 }
 
 export function appendToolResult(toolName, args, result) {
-  const row   = getOrCreateAssistantRow();
-  row.querySelector('.msg-footer')?.remove();
-  const strip = document.createElement('div');
-  strip.className = 'tool-inline';
-
-  const hasArgs = args && Object.keys(args).length > 0;
-  const bodyHtml = hasArgs
-    ? `<div class="tr-section-label">Arguments</div><div class="tr-args">${formatArgsHtml(args)}</div>` +
-      `<div class="tr-section-label">Result</div><pre class="tr-result">${escapeHtml(String(result))}</pre>`
-    : `<pre class="tr-result">${escapeHtml(String(result))}</pre>`;
+  const row = prepareAssistantRow();
+  const strip = createElement('div', { className: 'tool-inline' });
 
   strip.innerHTML = `
     <button class="tr-summary">
@@ -316,47 +300,91 @@ export function appendToolResult(toolName, args, result) {
       <span class="tool-icon">${ICONS.toolSmall}</span>
       <span class="tr-tool-name">${escapeHtml(toolName)}</span>
     </button>
-    <div class="tr-body" style="display:none">${bodyHtml}</div>`;
+    <div class="tr-body" style="display:none">${createToolResultBody(args, result)}</div>`;
 
-  const btn  = strip.querySelector('.tr-summary');
-  const body = strip.querySelector('.tr-body');
-  const chev = strip.querySelector('.tr-chevron');
-  btn.addEventListener('click', () => {
-    const open = strip.classList.toggle('open');
-    chev.innerHTML = open ? ICONS.chevronDown : ICONS.chevronRight;
-    body.style.display = open ? 'block' : 'none';
+  attachCollapsible(strip, {
+    headerSelector: '.tr-summary',
+    bodySelector: '.tr-body',
+    chevronSelector: '.tr-chevron',
   });
+
   row.appendChild(strip);
   scrollToBottom();
 }
 
 export function renderAllMessages(displayLog) {
-  document.getElementById('messages').innerHTML = '';
+  messagesEl().innerHTML = '';
   displayLog.forEach(entry => {
-    if (entry.type === 'message')     appendMessage(entry.role, entry.content);
+    if (entry.type === 'message') appendMessage(entry.role, entry.content);
     if (entry.type === 'tool_result') appendToolResult(entry.name, entry.args, entry.result);
-    if (entry.type === 'thinking')    appendThinkingBlock(entry.content);
+    if (entry.type === 'thinking') appendThinkingBlock(entry.content);
   });
   scrollToBottom(true);
 }
 
-// ── Tool confirmation dialog ──────────────────────────────────────────────────
-
-let activeToolConfirmation = null;
-
 export function cancelToolConfirmation() {
   activeToolConfirmation?.cancel();
+}
+
+function parseToolArguments(call) {
+  try { return JSON.parse(call.function.arguments || '{}'); }
+  catch { return {}; }
+}
+
+function createToolDecisionItem(call, idx, decide) {
+  const args = parseToolArguments(call);
+  const hasArgs = Object.keys(args).length > 0;
+  const item = createElement('div', { className: 'tc-item open' });
+
+  item.innerHTML = `
+    <div class="tc-item-row">
+      <button class="tc-item-header">
+        <span class="tc-item-chevron">${ICONS.chevronDown}</span>
+        <span class="tool-icon">${ICONS.toolSmall}</span>
+        <span class="tc-item-name">${escapeHtml(call.function.name)}</span>
+        ${hasArgs ? '' : '<span class="tc-item-noargs">no arguments</span>'}
+      </button>
+      <span class="tc-actions">
+        <button class="tc-allow">${ICONS.check} allow</button>
+        <button class="tc-deny">${ICONS.close} deny</button>
+      </span>
+      <span class="tc-status" aria-live="polite"></span>
+    </div>
+    ${hasArgs ? `<div class="tc-item-args" style="display:block">${formatArgsHtml(args)}</div>` : ''}`;
+
+  if (hasArgs) {
+    attachCollapsible(item, {
+      headerSelector: '.tc-item-header',
+      bodySelector: '.tc-item-args',
+      chevronSelector: '.tc-item-chevron',
+    });
+  }
+
+  item.querySelector('.tc-allow').addEventListener('click', () => decide(idx, true, item));
+  item.querySelector('.tc-deny').addEventListener('click', () => decide(idx, false, item));
+  return item;
+}
+
+function markDecision(item, allowed) {
+  item.classList.add('decided');
+  item.querySelectorAll('.tc-allow, .tc-deny').forEach(button => {
+    button.disabled = true;
+    setVisible(button, false);
+  });
+
+  const status = item.querySelector('.tc-status');
+  if (!status) return;
+
+  status.className = `tc-status ${allowed ? 'allowed' : 'denied'}`;
+  status.innerHTML = allowed ? `${ICONS.check} allowed` : `${ICONS.close} denied`;
 }
 
 export function showToolConfirmation(calls) {
   cancelToolConfirmation();
 
   return new Promise(resolve => {
-    const row = getOrCreateAssistantRow();
-    row.querySelector('.msg-footer')?.remove();
-
-    const wrap = document.createElement('div');
-    wrap.className = 'tc-wrap';
+    const row = prepareAssistantRow();
+    const wrap = createElement('div', { className: 'tc-wrap' });
     row.appendChild(wrap);
     scrollToBottom();
 
@@ -379,6 +407,16 @@ export function showToolConfirmation(calls) {
       resolve(value);
     };
 
+    const decide = (idx, allowed, item) => {
+      if (settled || decisions[idx] !== null) return;
+
+      decisions[idx] = allowed;
+      pending -= 1;
+      markDecision(item, allowed);
+
+      if (pending === 0) settle(decisions);
+    };
+
     activeToolConfirmation = {
       wrap,
       cancel: () => {
@@ -387,66 +425,6 @@ export function showToolConfirmation(calls) {
       },
     };
 
-    const decide = (idx, allowed, item) => {
-      if (settled || decisions[idx] !== null) return;
-
-      decisions[idx] = allowed;
-      pending -= 1;
-
-      item.classList.add('decided');
-      item.querySelectorAll('.tc-allow, .tc-deny').forEach(btn => {
-        btn.disabled = true;
-        btn.style.display = 'none';
-      });
-
-      const status = item.querySelector('.tc-status');
-      if (status) {
-        status.className = `tc-status ${allowed ? 'allowed' : 'denied'}`;
-        status.innerHTML = allowed ? `${ICONS.check} allowed` : `${ICONS.close} denied`;
-      }
-
-      if (pending === 0) settle(decisions);
-    };
-
-    // One independently approvable collapsible row per tool call.
-    calls.forEach((call, idx) => {
-      let args = {};
-      try { args = JSON.parse(call.function.arguments || '{}'); } catch {}
-      const hasArgs = Object.keys(args).length > 0;
-
-      const item = document.createElement('div');
-      item.className = 'tc-item open';
-      item.innerHTML = `
-        <div class="tc-item-row">
-          <button class="tc-item-header">
-            <span class="tc-item-chevron">${ICONS.chevronDown}</span>
-            <span class="tool-icon">${ICONS.toolSmall}</span>
-            <span class="tc-item-name">${escapeHtml(call.function.name)}</span>
-            ${hasArgs ? '' : '<span class="tc-item-noargs">no arguments</span>'}
-          </button>
-          <span class="tc-actions">
-            <button class="tc-allow">${ICONS.check} allow</button>
-            <button class="tc-deny">${ICONS.close} deny</button>
-          </span>
-          <span class="tc-status" aria-live="polite"></span>
-        </div>
-        ${hasArgs ? `<div class="tc-item-args" style="display:block">${formatArgsHtml(args)}</div>` : ''}`;
-
-      if (hasArgs) {
-        const btn  = item.querySelector('.tc-item-header');
-        const pre  = item.querySelector('.tc-item-args');
-        const chev = item.querySelector('.tc-item-chevron');
-        btn.addEventListener('click', () => {
-          const open = item.classList.toggle('open');
-          chev.innerHTML = open ? ICONS.chevronDown : ICONS.chevronRight;
-          pre.style.display = open ? 'block' : 'none';
-        });
-      }
-
-      item.querySelector('.tc-allow').addEventListener('click', () => decide(idx, true, item));
-      item.querySelector('.tc-deny').addEventListener('click',  () => decide(idx, false, item));
-
-      wrap.appendChild(item);
-    });
+    calls.forEach((call, idx) => wrap.appendChild(createToolDecisionItem(call, idx, decide)));
   });
 }

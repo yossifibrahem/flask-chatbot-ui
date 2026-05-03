@@ -1,9 +1,8 @@
 // MCP server config and tool management.
 
 import { api }     from './api.js';
-import { state }   from './state.js';
+import { state, STORAGE_KEYS } from './state.js';
 import { storage } from './storage.js';
-import { STORAGE_KEYS } from './state.js';
 import { escapeHtml }   from './renderer.js';
 import { showStatus, showToast } from './ui.js';
 
