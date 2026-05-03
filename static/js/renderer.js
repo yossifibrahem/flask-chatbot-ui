@@ -4,6 +4,7 @@
 import { applyMarkdown } from './markdown.js';
 import { $, createElement, remove, setVisible } from './dom.js';
 import { ICONS } from './icons.js';
+import { state } from './state.js';
 
 const EMPTY_STATE_PROMPTS = [
   { tag: 'EXPLAIN', label: 'How do transformers work in machine learning?', prompt: 'Explain how transformers work in machine learning' },
@@ -101,6 +102,106 @@ function addCopyFooter(row, getText) {
 
   footer.appendChild(copyBtn);
   row.appendChild(footer);
+}
+
+function addUserFooter(row, getText, logIndex) {
+  const footer = createElement('div', { className: 'msg-footer' });
+
+  const copyBtn = createElement('button', { className: 'msg-action-btn', html: `${ICONS.copy} copy` });
+  copyBtn.addEventListener('click', () => {
+    navigator.clipboard.writeText(getText());
+    copyBtn.textContent = '✓ copied';
+    setTimeout(() => { copyBtn.innerHTML = `${ICONS.copy} copy`; }, 1500);
+  });
+
+  const editBtn = createElement('button', { className: 'msg-action-btn', html: `${ICONS.edit} edit` });
+  editBtn.addEventListener('click', () => {
+    if (logIndex < 0) return;
+    startInlineEdit(row, logIndex, getText());
+  });
+
+  footer.appendChild(copyBtn);
+  footer.appendChild(editBtn);
+  row.appendChild(footer);
+}
+
+function addAssistantFooter(row, getText, logIndex) {
+  const footer = createElement('div', { className: 'msg-footer' });
+
+  const copyBtn = createElement('button', { className: 'msg-action-btn', html: `${ICONS.copy} copy` });
+  copyBtn.addEventListener('click', () => {
+    navigator.clipboard.writeText(getText());
+    copyBtn.textContent = '✓ copied';
+    setTimeout(() => { copyBtn.innerHTML = `${ICONS.copy} copy`; }, 1500);
+  });
+
+  if (logIndex >= 0) {
+    const regenBtn = createElement('button', { className: 'msg-action-btn', html: `${ICONS.refresh} regenerate` });
+    regenBtn.addEventListener('click', () => {
+      row.dispatchEvent(new CustomEvent('chat:regenerate', { bubbles: true, detail: { logIndex } }));
+    });
+    footer.appendChild(copyBtn);
+    footer.appendChild(regenBtn);
+  } else {
+    footer.appendChild(copyBtn);
+  }
+
+  row.appendChild(footer);
+}
+
+function startInlineEdit(row, logIndex, currentText) {
+  // Save and remove existing content and footer
+  const contentEl = row.querySelector('.msg-content');
+  const footerEl  = row.querySelector('.msg-footer');
+  if (!contentEl) return;
+
+  contentEl.style.display = 'none';
+  footerEl?.remove();
+
+  // Build edit UI
+  const editWrap = createElement('div', { className: 'msg-edit-wrap' });
+  const textarea = createElement('textarea', { className: 'msg-edit-textarea' });
+  textarea.value = currentText;
+  textarea.rows = Math.min(Math.max(currentText.split('\n').length, 2), 10);
+
+  const actions = createElement('div', { className: 'msg-edit-actions' });
+  const saveBtn   = createElement('button', { className: 'msg-edit-save',   text: 'Send' });
+  const cancelBtn = createElement('button', { className: 'msg-edit-cancel', text: 'Cancel' });
+
+  const cancelEdit = () => {
+    editWrap.remove();
+    contentEl.style.display = '';
+    addUserFooter(row, () => currentText, logIndex);
+  };
+
+  saveBtn.addEventListener('click', () => {
+    const newText = textarea.value.trim();
+    if (!newText) return;
+    editWrap.remove();
+    contentEl.style.display = '';
+    row.dispatchEvent(new CustomEvent('chat:edit-resend', { bubbles: true, detail: { logIndex, newText } }));
+  });
+
+  cancelBtn.addEventListener('click', cancelEdit);
+
+  textarea.addEventListener('keydown', e => {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); saveBtn.click(); }
+    if (e.key === 'Escape') cancelEdit();
+  });
+
+  actions.appendChild(cancelBtn);
+  actions.appendChild(saveBtn);
+  editWrap.appendChild(textarea);
+  editWrap.appendChild(actions);
+  row.appendChild(editWrap);
+
+  // Auto-resize textarea
+  setTimeout(() => {
+    textarea.style.height = 'auto';
+    textarea.style.height = textarea.scrollHeight + 'px';
+    textarea.focus();
+    textarea.setSelectionRange(textarea.value.length, textarea.value.length);
+  }, 0);
 }
 
 function toggleCollapsible(block, body, chevron) {
@@ -217,7 +318,7 @@ function getRawText(content) {
   return content.map(part => part.text || '').join('\n');
 }
 
-export function appendMessage(role, content) {
+export function appendMessage(role, content, logIndex = -1) {
   if (!content) return null;
 
   const isUser = role === 'user';
@@ -225,13 +326,18 @@ export function appendMessage(role, content) {
     ? createMessageRow({ avatarClass: 'user-av', avatarIcon: ICONS.user, roleLabel: 'You', isUser: true })
     : prepareAssistantRow();
 
+  if (logIndex >= 0) row.dataset.logIndex = logIndex;
   row.querySelector('.msg-footer')?.remove();
 
   const contentEl = createElement('div', { className: 'msg-content' });
   appendContentParts(contentEl, content);
   row.appendChild(contentEl);
 
-  addCopyFooter(row, () => getRawText(content));
+  if (isUser) {
+    addUserFooter(row, () => getRawText(content), logIndex);
+  } else {
+    addAssistantFooter(row, () => getRawText(content), logIndex);
+  }
   scrollToBottom(isUser);
   return contentEl;
 }
@@ -250,7 +356,25 @@ export function finalizeStreamingMessage(contentEl, text) {
 
   const row = contentEl.parentElement;
   row.querySelector('.msg-footer')?.remove();
-  if (text) addCopyFooter(row, () => text);
+  // logIndex will be set after state.displayLog.push() via setStreamingMessageLogIndex
+  if (text) addAssistantFooter(row, () => text, -1);
+}
+
+export function setStreamingMessageLogIndex(contentEl, logIndex) {
+  const row = contentEl?.parentElement;
+  if (!row) return;
+  row.dataset.logIndex = logIndex;
+  // Update the regenerate button's logIndex closure by replacing the footer
+  const footerEl = row.querySelector('.msg-footer');
+  if (!footerEl) return;
+  // Find existing copy text via button
+  const copyBtn = footerEl.querySelector('.msg-action-btn');
+  const getText = () => {
+    const el = row.querySelector('.msg-content');
+    return el ? el.textContent : '';
+  };
+  footerEl.remove();
+  addAssistantFooter(row, getText, logIndex);
 }
 
 function normalizeBlockText(value) {
@@ -314,8 +438,8 @@ export function appendToolResult(toolName, args, result) {
 
 export function renderAllMessages(displayLog) {
   messagesEl().innerHTML = '';
-  displayLog.forEach(entry => {
-    if (entry.type === 'message') appendMessage(entry.role, entry.content);
+  displayLog.forEach((entry, idx) => {
+    if (entry.type === 'message') appendMessage(entry.role, entry.content, idx);
     if (entry.type === 'tool_result') appendToolResult(entry.name, entry.args, entry.result);
     if (entry.type === 'thinking') appendThinkingBlock(entry.content);
   });

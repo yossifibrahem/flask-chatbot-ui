@@ -11,7 +11,7 @@ import { openModal, closeModal, toggleSidebar, autoResize, updateCharCount } fro
 import { loadSettings, saveSettings, fetchModels }                           from './settings.js';
 import { loadConversationList, openConversation, createNewConversation, persistConversation } from './conversations.js';
 import { loadMcpConfig, saveMcpConfig, reloadTools, loadCachedTools } from './mcp.js';
-import { sendMessage, setStreaming, stopAssistantTurn } from './chat.js';
+import { sendMessage, setStreaming, stopAssistantTurn, editAndResend, regenerateFrom } from './chat.js';
 import { clearMessages } from './renderer.js';
 
 // ── Event binding ─────────────────────────────────────────────────────────────
@@ -102,6 +102,17 @@ function bindInputEvents() {
     userInput.value = prompt.dataset.prompt;
     autoResize(userInput);
     userInput.focus();
+  });
+
+  // Edit & Resend — dispatched from renderer when user confirms an edit
+  document.getElementById('messages').addEventListener('chat:edit-resend', e => {
+    const { logIndex, newText } = e.detail;
+    editAndResend(logIndex, newText);
+  });
+
+  // Regenerate — dispatched from renderer when user clicks regenerate
+  document.getElementById('messages').addEventListener('chat:regenerate', e => {
+    regenerateFrom(e.detail.logIndex);
   });
 }
 

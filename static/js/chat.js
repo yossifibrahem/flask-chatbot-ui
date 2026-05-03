@@ -4,7 +4,8 @@ import { api }   from './api.js';
 import { state } from './state.js';
 import {
   createStreamingMessage, appendMessage, appendToolResult,
-  showToolConfirmation, cancelToolConfirmation, finalizeStreamingMessage, escapeHtml, scrollToBottom,
+  showToolConfirmation, cancelToolConfirmation, finalizeStreamingMessage, setStreamingMessageLogIndex,
+  escapeHtml, scrollToBottom, renderAllMessages,
   createThinkingBlock, updateThinkingBlock, finalizeThinkingBlock,
 } from './renderer.js';
 import { applyMarkdown } from './markdown.js';
@@ -75,7 +76,7 @@ export async function sendMessage(userText) {
 
   state.messages.push({ role: 'user', content: userText });
   state.displayLog.push({ type: 'message', role: 'user', content: userText });
-  appendMessage('user', userText);
+  appendMessage('user', userText, state.displayLog.length - 1);
 
   turnCancelled = false;
 
@@ -187,6 +188,7 @@ async function runChatLoop() {
       if (ctx.accReasoning) state.displayLog.push({ type: 'thinking', content: ctx.accReasoning });
       state.messages.push({ role: 'assistant', content: ctx.accText });
       state.displayLog.push({ type: 'message', role: 'assistant', content: ctx.accText });
+      setStreamingMessageLogIndex(contentEl, state.displayLog.length - 1);
     }
   } catch (err) {
     if (turnCancelled || err.name === 'AbortError') return;
@@ -194,6 +196,64 @@ async function runChatLoop() {
     const el = ctx.getContentEl();
     el.classList.remove('cursor-blink');
     el.innerHTML = `<span style="color:var(--red)">Network error: ${escapeHtml(err.message)}</span>`;
+  }
+}
+
+// ── Index helpers ────────────────────────────────────────────────────────────
+
+/** Maps a displayLog index to the corresponding state.messages index. */
+function logIndexToMessagesIndex(logIndex) {
+  let count = 0;
+  for (let i = 0; i < logIndex; i++) {
+    const entry = state.displayLog[i];
+    if (entry && (entry.type === 'message' || entry.type === 'tool_result')) count++;
+  }
+  return count;
+}
+
+// ── Edit & Resend ─────────────────────────────────────────────────────────────
+
+export async function editAndResend(logIndex, newText) {
+  if (state.isStreaming) return;
+  const messagesIndex = logIndexToMessagesIndex(logIndex);
+  state.displayLog.splice(logIndex);
+  state.messages.splice(messagesIndex);
+  renderAllMessages(state.displayLog);
+  await sendMessage(newText);
+}
+
+// ── Regenerate ────────────────────────────────────────────────────────────────
+
+export async function regenerateFrom(logIndex) {
+  if (state.isStreaming) return;
+
+  // Walk back to find the index right after the last user message — that's
+  // where the whole assistant turn (thinking + tool calls + responses) begins.
+  let turnStart = 0;
+  for (let i = logIndex - 1; i >= 0; i--) {
+    const entry = state.displayLog[i];
+    if (entry.type === 'message' && entry.role === 'user') {
+      turnStart = i + 1;
+      break;
+    }
+  }
+
+  const messagesIndex = logIndexToMessagesIndex(turnStart);
+  state.displayLog.splice(turnStart);
+  state.messages.splice(messagesIndex);
+  renderAllMessages(state.displayLog);
+
+  if (!state.convId) return;
+  setStreaming(true);
+  turnCancelled = false;
+  try {
+    await runChatLoop();
+    await persistConversation();
+  } finally {
+    turnAbortController?.abort();
+    turnAbortController = null;
+    state.streamId = null;
+    setStreaming(false);
   }
 }
 

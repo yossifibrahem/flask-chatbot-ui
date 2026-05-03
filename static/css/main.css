@@ -1125,3 +1125,56 @@ body::before {
 .tc-status.allowed { color: var(--green); }
 .tc-status.denied { color: var(--red); }
 .tc-item.decided .tc-item-name { opacity: .72; }
+
+/* ─── Inline Edit UI ───────────────────────────────────────────────────────── */
+.msg-edit-wrap {
+  margin-top: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.msg-edit-textarea {
+  width: 100%;
+  box-sizing: border-box;
+  background: var(--surface2);
+  border: 1px solid var(--accent);
+  border-radius: 8px;
+  color: var(--text);
+  font-family: var(--font-sans);
+  font-size: .9rem;
+  line-height: 1.6;
+  padding: 10px 12px;
+  resize: vertical;
+  min-height: 60px;
+  outline: none;
+  transition: border-color .15s;
+}
+.msg-edit-textarea:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-dim);
+}
+.msg-edit-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 6px;
+}
+.msg-edit-save,
+.msg-edit-cancel {
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-family: var(--font-mono);
+  font-size: .7rem;
+  padding: 5px 12px;
+  transition: all .15s;
+}
+.msg-edit-save {
+  background: var(--accent);
+  color: #fff;
+}
+.msg-edit-save:hover { filter: brightness(1.15); }
+.msg-edit-cancel {
+  background: var(--surface3);
+  color: var(--text2);
+}
+.msg-edit-cancel:hover { background: var(--surface4, var(--surface3)); color: var(--text); }
