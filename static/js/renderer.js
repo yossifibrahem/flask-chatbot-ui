@@ -104,7 +104,7 @@ function addCopyFooter(row, getText) {
   row.appendChild(footer);
 }
 
-function addUserFooter(row, getText, logIndex) {
+function addUserFooter(row, getText, logIndex, getContent = () => null) {
   const footer = createElement('div', { className: 'msg-footer' });
 
   const copyBtn = createElement('button', { className: 'msg-action-btn', html: `${ICONS.copy} copy` });
@@ -117,7 +117,7 @@ function addUserFooter(row, getText, logIndex) {
   const editBtn = createElement('button', { className: 'msg-action-btn', html: `${ICONS.edit} edit` });
   editBtn.addEventListener('click', () => {
     if (logIndex < 0) return;
-    startInlineEdit(row, logIndex, getText());
+    startInlineEdit(row, logIndex, getText(), getContent());
   });
 
   footer.appendChild(copyBtn);
@@ -149,11 +149,17 @@ function addAssistantFooter(row, getText, logIndex) {
   row.appendChild(footer);
 }
 
-function startInlineEdit(row, logIndex, currentText) {
+function startInlineEdit(row, logIndex, currentText, currentContent = null) {
   // Save and remove existing content and footer
   const contentEl = row.querySelector('.msg-content');
   const footerEl  = row.querySelector('.msg-footer');
   if (!contentEl) return;
+
+  // Extract persisted image URLs from the original content object so they
+  // survive the edit cycle and are not silently dropped on resend.
+  const imageUrls = (currentContent && typeof currentContent === 'object' && !Array.isArray(currentContent))
+    ? (currentContent.imageUrls || [])
+    : [];
 
   contentEl.style.display = 'none';
   footerEl?.remove();
@@ -171,15 +177,16 @@ function startInlineEdit(row, logIndex, currentText) {
   const cancelEdit = () => {
     editWrap.remove();
     contentEl.style.display = '';
-    addUserFooter(row, () => currentText, logIndex);
+    addUserFooter(row, () => currentText, logIndex, () => currentContent);
   };
 
   saveBtn.addEventListener('click', () => {
     const newText = textarea.value.trim();
-    if (!newText) return;
+    if (!newText && !imageUrls.length) return;
     editWrap.remove();
     contentEl.style.display = '';
-    row.dispatchEvent(new CustomEvent('chat:edit-resend', { bubbles: true, detail: { logIndex, newText } }));
+    // Include the original imageUrls so editAndResend can restore them.
+    row.dispatchEvent(new CustomEvent('chat:edit-resend', { bubbles: true, detail: { logIndex, newText, imageUrls } }));
   });
 
   cancelBtn.addEventListener('click', cancelEdit);
@@ -192,6 +199,20 @@ function startInlineEdit(row, logIndex, currentText) {
   actions.appendChild(cancelBtn);
   actions.appendChild(saveBtn);
   editWrap.appendChild(textarea);
+
+  // Show attached images as a read-only strip inside the edit UI.
+  if (imageUrls.length) {
+    const imgStrip = createElement('div', { className: 'msg-edit-images' });
+    imageUrls.forEach(url => {
+      const img = document.createElement('img');
+      img.src       = url;
+      img.className = 'msg-image msg-edit-image-thumb';
+      img.alt       = '';
+      imgStrip.appendChild(img);
+    });
+    editWrap.appendChild(imgStrip);
+  }
+
   editWrap.appendChild(actions);
   row.appendChild(editWrap);
 
@@ -356,7 +377,7 @@ export function appendMessage(role, content, logIndex = -1) {
   row.appendChild(contentEl);
 
   if (isUser) {
-    addUserFooter(row, () => getRawText(content), logIndex);
+    addUserFooter(row, () => getRawText(content), logIndex, () => content);
   } else {
     addAssistantFooter(row, () => getRawText(content), logIndex);
   }

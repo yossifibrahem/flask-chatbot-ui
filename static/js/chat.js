@@ -354,13 +354,56 @@ function logIndexToMessagesIndex(logIndex) {
 
 // ── Edit & Resend ─────────────────────────────────────────────────────────────
 
-export async function editAndResend(logIndex, newText) {
+/**
+ * Extract the image ref from a server image URL, e.g. "/api/images/<ref>" → "<ref>".
+ * Returns null if the URL doesn't match the expected pattern.
+ */
+function imageUrlToRef(url) {
+  const match = url && url.match(/\/api\/images\/([^/?#]+)/);
+  return match ? match[1] : null;
+}
+
+export async function editAndResend(logIndex, newText, imageUrls = []) {
   if (state.isStreaming) return;
+  if (!newText.trim() && !imageUrls.length) return;
+  if (!state.convId) await createNewConversation();
+
   const messagesIndex = logIndexToMessagesIndex(logIndex);
   state.displayLog.splice(logIndex);
   state.messages.splice(messagesIndex);
   renderAllMessages(state.displayLog);
-  await sendMessage(newText);
+
+  // If there are no images, fall through to the normal sendMessage path.
+  if (!imageUrls.length) {
+    await sendMessage(newText);
+    return;
+  }
+
+  // Rebuild the user turn with the original image refs so images are preserved.
+  const textToSend = newText.trim();
+  const refs = imageUrls.map(imageUrlToRef).filter(Boolean);
+
+  const apiContent = [];
+  if (textToSend) apiContent.push({ type: 'text', text: textToSend });
+  refs.forEach(ref => apiContent.push({ type: 'image_ref', ref }));
+
+  const displayContent = { text: textToSend, imageUrls };
+
+  state.messages.push({ role: 'user', content: apiContent });
+  state.displayLog.push({ type: 'message', role: 'user', content: displayContent });
+  appendMessage('user', displayContent, state.displayLog.length - 1);
+
+  setStreaming(true);
+  turnCancelled = false;
+  try {
+    await runChatLoop();
+    await persistConversation();
+  } finally {
+    turnAbortController?.abort();
+    turnAbortController = null;
+    state.streamId = null;
+    setStreaming(false);
+  }
 }
 
 // ── Regenerate ────────────────────────────────────────────────────────────────

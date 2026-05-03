@@ -107,8 +107,8 @@ function bindInputEvents() {
 
   // Edit & Resend — dispatched from renderer when user confirms an edit
   document.getElementById('messages').addEventListener('chat:edit-resend', e => {
-    const { logIndex, newText } = e.detail;
-    editAndResend(logIndex, newText);
+    const { logIndex, newText, imageUrls } = e.detail;
+    editAndResend(logIndex, newText, imageUrls);
   });
 
   // Regenerate — dispatched from renderer when user clicks regenerate

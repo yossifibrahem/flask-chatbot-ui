@@ -1224,3 +1224,11 @@ body::before {
   color: var(--text2);
 }
 .msg-edit-cancel:hover { background: var(--surface4, var(--surface3)); color: var(--text); }
+.msg-edit-images {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.msg-edit-image-thumb {
+  opacity: .75;
+}
