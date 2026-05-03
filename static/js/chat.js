@@ -245,6 +245,10 @@ function processSSEEvent(raw, ctx) {
     updateThinkingBlock(ctx.reasoningBodyEl, ctx.accReasoning);
 
   } else if (evt.type === 'text') {
+    if (ctx.reasoningBodyEl) {
+      finalizeThinkingBlock(ctx.reasoningBodyEl, ctx.accReasoning);
+      ctx.reasoningBodyEl = null;
+    }
     ctx.accText += evt.content;
     const el = ctx.getContentEl();
     el.classList.add('cursor-blink');
@@ -492,9 +496,16 @@ async function handleToolCalls(calls, precedingText, precedingReasoning = '') {
   for (let i = 0; i < calls.length; i++) {
     if (turnCancelled) return;
 
-    const tc     = calls[i];
-    const args   = parseToolArgs(tc.function.arguments);
-    const result = decisions[i] ? await executeTool(tc, { signal: turnAbortController?.signal }) : 'Tool execution denied by user.';
+    const tc   = calls[i];
+    const args = parseToolArgs(tc.function.arguments);
+    let result;
+    if (decisions[i]) {
+      showToolUseIndicator(tc.function.name, 'running');
+      result = await executeTool(tc, { signal: turnAbortController?.signal });
+      hideToolUseIndicator();
+    } else {
+      result = 'Tool execution denied by user.';
+    }
     appendToolResult(tc.function.name, args, result);
     state.displayLog.push({ type: 'tool_result', name: tc.function.name, args, result });
     state.messages.push({ role: 'tool', tool_call_id: tc.id, content: result });

@@ -490,13 +490,13 @@ export function renderAllMessages(displayLog) {
   scrollToBottom(true);
 }
 
-export function showToolUseIndicator(toolName) {
+export function showToolUseIndicator(toolName, label = 'using') {
   hideToolUseIndicator();
-  const row = getOrCreateAssistantRow();
+  const row = prepareAssistantRow();
   const el = createElement('div', { className: 'tool-use-indicator' });
   el.innerHTML = `
     <span class="tool-icon">${ICONS.toolSmall}</span>
-    <span>using <span class="tui-name">${escapeHtml(toolName)}</span></span>
+    <span>${escapeHtml(label)} <span class="tui-name">${escapeHtml(toolName)}</span></span>
     <span class="thinking-pulse"></span>`;
   row.appendChild(el);
   toolUseIndicatorEl = el;
