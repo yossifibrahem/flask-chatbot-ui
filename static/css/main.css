@@ -340,8 +340,7 @@ body::before {
   text-overflow: ellipsis;
 }
 .mp-chip:hover { background: var(--surface2); color: var(--text); }
-.mp-chip.selected,
-.model-chip.selected { background: var(--accent-dim); color: var(--accent); }
+.mp-chip.selected { background: var(--accent-dim); color: var(--accent); border-color: rgba(201,169,110,.3); }
 
 .mp-empty {
   font-family: var(--font-mono);
@@ -947,7 +946,7 @@ body::before {
 .btn-row { display: flex; gap: 8px; margin-bottom: 4px; }
 
 /* ─── Buttons ───────────────────────────────────────────────────────────────── */
-.btn-primary, .btn-secondary, .btn-danger {
+.btn-primary, .btn-secondary {
   border-radius: 8px;
   padding: 9px 18px;
   font-family: var(--font-mono);
@@ -961,8 +960,6 @@ body::before {
 .btn-primary:hover { opacity: .85; }
 .btn-secondary { background: var(--surface2); color: var(--text2); border: 1px solid var(--border); transition: all .15s; }
 .btn-secondary:hover { color: var(--text); border-color: var(--border2); }
-.btn-danger { background: rgba(224,112,112,.1); color: var(--red); border: 1px solid rgba(224,112,112,.3); transition: all .15s; }
-.btn-danger:hover { background: rgba(224,112,112,.2); }
 
 /* ─── Status Message ────────────────────────────────────────────────────────── */
 .status-msg { font-family: var(--font-mono); font-size: .72rem; padding: 8px 12px; border-radius: 7px; display: none; margin-top: 12px; }
@@ -973,8 +970,7 @@ body::before {
 .model-list { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; max-height: 180px; overflow-y: auto; }
 .model-chip { padding: 5px 11px; border-radius: 20px; border: 1px solid var(--border); font-size: .68rem; }
 .model-chip:hover { border-color: var(--accent); color: var(--accent); }
-.mp-chip.selected { border-color: rgba(201,169,110,.3); }
-.model-chip.selected { border-color: rgba(201,169,110,.5); }
+.model-chip.selected { background: var(--accent-dim); color: var(--accent); border-color: rgba(201,169,110,.5); }
 
 /* ─── Section Dividers ──────────────────────────────────────────────────────── */
 .section-sep { height: 1px; background: var(--border); margin: 22px 0; }
@@ -1179,7 +1175,6 @@ body::before {
   transition: border-color .15s;
 }
 .msg-edit-textarea:focus {
-  border-color: var(--accent);
   box-shadow: 0 0 0 3px var(--accent-dim);
 }
 .msg-edit-actions {
@@ -1206,7 +1201,7 @@ body::before {
   background: var(--surface3);
   color: var(--text2);
 }
-.msg-edit-cancel:hover { background: var(--surface4, var(--surface3)); color: var(--text); }
+.msg-edit-cancel:hover { background: var(--surface3); color: var(--text); }
 .msg-edit-images {
   display: flex;
   flex-wrap: wrap;
