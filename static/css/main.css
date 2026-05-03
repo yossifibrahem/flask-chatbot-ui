@@ -1022,10 +1022,151 @@ body::before {
 #mcp-config-editor:focus { border-color: var(--accent-border); }
 
 /* ─── Responsive ────────────────────────────────────────────────────────────── */
-@media (max-width: 600px) {
-  :root { --sidebar-w: 240px; }
+
+/* ── Sidebar backdrop (mobile overlay) ── */
+#sidebar-backdrop {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, .55);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+  z-index: 99;
+  opacity: 0;
+  transition: opacity .28s;
+}
+#sidebar-backdrop.visible {
+  display: block;
+  opacity: 1;
+}
+
+@media (max-width: 768px) {
+  :root { --sidebar-w: 280px; }
+
+  /* Sidebar always overlays on mobile — never pushes content */
+  #sidebar {
+    position: fixed;
+    left: 0; top: 0; bottom: 0;
+    height: 100dvh;
+    z-index: 100;
+    transform: translateX(calc(-1 * var(--sidebar-w)));
+    transition: transform .28s cubic-bezier(.4,0,.2,1);
+  }
+  #sidebar:not(.collapsed) {
+    transform: translateX(0);
+    box-shadow: 8px 0 40px rgba(0,0,0,.6);
+  }
+  /* Override the desktop rule that adds position:fixed only when collapsed */
+  #sidebar.collapsed {
+    position: fixed;
+    transform: translateX(calc(-1 * var(--sidebar-w)));
+  }
+
+  /* Main always full-width — sidebar never takes layout space */
+  #main { margin-left: 0 !important; }
+
+  /* ── Chat header ── */
+  #chat-header { padding: 0 12px; gap: 8px; height: 50px; }
+  #chat-title-input { font-size: .82rem; }
+
+  /* Shrink model badge so it doesn't overflow narrow headers */
+  #model-badge {
+    max-width: 120px;
+    font-size: .62rem;
+    padding: 4px 7px 4px 9px;
+  }
+  #model-badge-label {
+    max-width: 80px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  #model-popover { width: 220px; right: 0; }
+
+  /* ── Messages ── */
+  .msg-row { padding: 12px 14px 4px; }
+  .msg-row:first-child { padding-top: 18px; }
+  .msg-content { font-size: .875rem; }
+
+  /* Tables scroll horizontally instead of overflowing */
+  .msg-content table {
+    display: block;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    max-width: 100%;
+  }
+
+  /* Code blocks: prevent overflow, keep scrollable */
+  .msg-content pre { max-width: 100%; }
+  .msg-content pre code { font-size: .75rem; }
+
+  /* ── Input area ── */
+  #input-area { padding: 10px 12px; }
+  #image-preview-bar { margin-bottom: 6px; }
+
+  /* Keyboard hint is irrelevant on mobile — hide it */
+  .input-hint { display: none; }
+  .input-footer { margin-top: 4px; }
+
+  #user-input {
+    font-size: .88rem;
+    padding: 11px 48px 11px 44px;
+    min-height: 46px;
+  }
+
+  /* Bigger touch targets for send/attach */
+  #attach-btn { width: 36px; height: 36px; bottom: 7px; }
+  #send-btn, #stop-btn { width: 36px; height: 36px; bottom: 7px; right: 8px; }
+
+  /* ── Empty state ── */
   .es-prompts { grid-template-columns: 1fr; }
-  .modal { max-width: 100%; max-height: 95vh; }
+  #empty-state { padding: 24px 16px; }
+  .es-logo { font-size: 1.8rem; }
+  .es-sub { margin-bottom: 20px; }
+
+  /* ── Conversation list ── */
+  .conv-item { padding: 10px 8px; }
+  /* Always show delete button on mobile (no hover on touch) */
+  .conv-del { opacity: 1; padding: 6px; }
+
+  /* ── Sidebar footer ── */
+  .sidebar-action { padding: 11px 10px; }
+
+  /* ── Toggle button ── */
+  #btn-toggle-sidebar { padding: 8px; }
+  #btn-toggle-sidebar svg { width: 20px; height: 20px; }
+
+  /* ── Modal — bottom-sheet style on mobile ── */
+  .modal-overlay {
+    padding: 0;
+    align-items: flex-end;
+  }
+  .modal {
+    max-width: 100%;
+    width: 100%;
+    height: 90dvh;
+    max-height: 90dvh;
+    border-radius: 16px 16px 0 0;
+    border-bottom: none;
+    /* Slide up from bottom */
+    transform: translateY(20px) scale(1);
+  }
+  .modal-overlay.open .modal { transform: translateY(0) scale(1); }
+  .modal-header { padding: 14px 16px 12px; }
+  .modal-body { padding: 16px; }
+  .modal-footer { padding: 12px 16px; }
+
+  /* Slightly larger form inputs for touch */
+  .field input, .field select, .field textarea { font-size: .85rem; padding: 11px 12px; }
+  .btn-primary, .btn-secondary { padding: 10px 18px; }
+}
+
+/* ── Extra-small screens (≤ 380px) ── */
+@media (max-width: 380px) {
+  #model-badge { max-width: 90px; font-size: .6rem; }
+  #model-badge-label { max-width: 60px; }
+  .msg-row { padding: 10px 10px 4px; }
+  #input-area { padding: 8px 10px; }
+  #chat-header { padding: 0 10px; gap: 6px; }
 }
 /* ─── MCP Server Groups & Toggle Switches ───────────────────────────────────── */
 

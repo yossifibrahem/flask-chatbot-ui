@@ -154,5 +154,7 @@ function bindEvents() {
   }
 
   const sidebarOpen = storage.get(STORAGE_KEYS.sidebar, true);
-  if (!sidebarOpen) toggleSidebar(false);
+  // Always start collapsed on mobile — sidebar overlays content there
+  const shouldOpen = window.innerWidth <= 768 ? false : sidebarOpen;
+  if (!shouldOpen) toggleSidebar(false);
 })();
