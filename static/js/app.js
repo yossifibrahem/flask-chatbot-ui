@@ -11,7 +11,7 @@ import { openModal, closeModal, toggleSidebar, autoResize, updateCharCount } fro
 import { loadSettings, saveSettings, fetchModels }                           from './settings.js';
 import { loadConversationList, openConversation, createNewConversation, persistConversation } from './conversations.js';
 import { loadMcpConfig, saveMcpConfig, reloadTools, loadCachedTools } from './mcp.js';
-import { sendMessage, setStreaming, stopAssistantTurn, editAndResend, regenerateFrom } from './chat.js';
+import { sendMessage, setStreaming, stopAssistantTurn, editAndResend, regenerateFrom, initImageAttachments } from './chat.js';
 import { clearMessages } from './renderer.js';
 
 // ── Event binding ─────────────────────────────────────────────────────────────
@@ -74,8 +74,7 @@ function bindInputEvents() {
   const userInput = document.getElementById('user-input');
 
   const submitInput = () => {
-    const text = userInput.value.trim();
-    if (!text) return;
+    const text = userInput.value;
     userInput.value = '';
     autoResize(userInput);
     updateCharCount();
@@ -89,6 +88,8 @@ function bindInputEvents() {
   });
 
   document.getElementById('stop-btn').addEventListener('click', stopAssistantTurn);
+
+  initImageAttachments();
 
   // Chat title persistence
   const titleInput = document.getElementById('chat-title-input');

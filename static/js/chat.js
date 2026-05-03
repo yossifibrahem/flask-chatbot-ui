@@ -15,6 +15,93 @@ import { persistConversation, createNewConversation } from './conversations.js';
 let turnAbortController = null;
 let turnCancelled = false;
 
+// ── Attached images (pending send) ────────────────────────────────────────────
+
+let pendingImages = [];
+// Each entry: { previewUrl: string, uploadPromise: Promise<{ref, url, mediaType}|null> }
+
+function getImagePreviewBar() { return document.getElementById('image-preview-bar'); }
+
+function refreshImagePreviewBar() {
+  const bar = getImagePreviewBar();
+  if (!bar) return;
+  if (!pendingImages.length) { bar.style.display = 'none'; bar.innerHTML = ''; return; }
+  bar.style.display = 'flex';
+  bar.innerHTML = '';
+  pendingImages.forEach((img, idx) => {
+    const wrap = document.createElement('div');
+    wrap.className = 'img-preview-wrap';
+    wrap.innerHTML = `
+      <img class="img-preview-thumb img-preview-uploading" src="${img.previewUrl}" />
+      <button class="img-preview-remove" title="Remove">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>`;
+
+    const thumb = wrap.querySelector('.img-preview-thumb');
+    img.uploadPromise.then(result => {
+      if (result) thumb.classList.remove('img-preview-uploading');
+      else        thumb.classList.add('img-preview-error');
+    });
+
+    wrap.querySelector('.img-preview-remove').addEventListener('click', () => {
+      pendingImages.splice(idx, 1);
+      refreshImagePreviewBar();
+    });
+    bar.appendChild(wrap);
+  });
+}
+
+/** Read a File into a base64 data-URL, returning { dataUrl, mediaType, name }. */
+function readFile(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload  = () => resolve({ dataUrl: reader.result, mediaType: file.type || 'image/png', name: file.name });
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+/** Upload base64 image to the server; returns { ref, url, mediaType } or null on failure. */
+async function uploadImage(dataUrl, mediaType) {
+  const base64 = dataUrl.split(',')[1];
+  try {
+    const result = await api.post('/api/images', { data: base64, media_type: mediaType });
+    if (result.error) return null;
+    return { ref: result.ref, url: result.url, mediaType };
+  } catch {
+    return null;
+  }
+}
+
+async function addImageFiles(files) {
+  for (const file of Array.from(files)) {
+    if (!file.type.startsWith('image/')) continue;
+    try {
+      const { dataUrl, mediaType } = await readFile(file);
+      const uploadPromise = uploadImage(dataUrl, mediaType);
+      pendingImages.push({ previewUrl: dataUrl, uploadPromise });
+      refreshImagePreviewBar(); // show thumb immediately, upload in background
+    } catch {}
+  }
+}
+
+export function initImageAttachments() {
+  const attachBtn  = document.getElementById('attach-btn');
+  const imageInput = document.getElementById('image-input');
+  const textarea   = document.getElementById('user-input');
+
+  attachBtn?.addEventListener('click', () => imageInput?.click());
+  imageInput?.addEventListener('change', e => { addImageFiles(e.target.files); imageInput.value = ''; });
+
+  textarea?.addEventListener('paste', e => {
+    const items = Array.from(e.clipboardData?.items || []);
+    const imageItems = items.filter(i => i.type.startsWith('image/'));
+    if (!imageItems.length) return;
+    e.preventDefault();
+    addImageFiles(imageItems.map(i => i.getAsFile()));
+  });
+}
+
 // ── Payload builders ──────────────────────────────────────────────────────────
 
 function buildToolsPayload() {
@@ -30,11 +117,40 @@ function buildToolsPayload() {
     }));
 }
 
-function buildApiMessages() {
+/** Fetch a server-stored image and return it as a base64 data-URL. */
+async function imageRefToDataUrl(ref) {
+  const resp = await fetch(`/api/images/${ref}`);
+  const blob = await resp.blob();
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload  = () => resolve(reader.result);
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+  });
+}
+
+/** Expand image_ref content blocks into image_url blocks the OpenAI API understands. */
+async function expandImageRefs(messages) {
+  return Promise.all(messages.map(async msg => {
+    if (!Array.isArray(msg.content)) return msg;
+    const expanded = await Promise.all(msg.content.map(async part => {
+      if (part.type !== 'image_ref') return part;
+      try {
+        const url = await imageRefToDataUrl(part.ref);
+        return { type: 'image_url', image_url: { url } };
+      } catch {
+        return null; // skip unresolvable refs rather than crashing
+      }
+    }));
+    return { ...msg, content: expanded.filter(Boolean) };
+  }));
+}
+
+async function buildApiMessages() {
   const messages = [];
   if (state.systemPrompt) messages.push({ role: 'system', content: state.systemPrompt });
   messages.push(...state.messages);
-  return messages;
+  return expandImageRefs(messages);
 }
 
 // ── Streaming state ───────────────────────────────────────────────────────────
@@ -64,19 +180,44 @@ export async function stopAssistantTurn() {
 // ── Main entry point ──────────────────────────────────────────────────────────
 
 export async function sendMessage(userText) {
-  if (!userText.trim() || state.isStreaming) return;
+  if (!userText.trim() && !pendingImages.length) return;
+  if (state.isStreaming) return;
   if (!state.convId) await createNewConversation();
 
   setStreaming(true);
 
-  if (state.messages.length === 0) {
+  const textToSend   = userText.trim();
+  const imagesToSend = pendingImages.splice(0);
+  refreshImagePreviewBar();
+
+  if (state.messages.length === 0 && textToSend) {
     document.getElementById('chat-title-input').value =
-      userText.slice(0, 42) + (userText.length > 42 ? '…' : '');
+      textToSend.slice(0, 42) + (textToSend.length > 42 ? '…' : '');
   }
 
-  state.messages.push({ role: 'user', content: userText });
-  state.displayLog.push({ type: 'message', role: 'user', content: userText });
-  appendMessage('user', userText, state.displayLog.length - 1);
+  // Await any in-progress uploads before building the payload.
+  const uploadedRefs = await Promise.all(imagesToSend.map(img => img.uploadPromise));
+  const validRefs    = uploadedRefs.filter(Boolean); // drop any that failed
+
+  let apiContent;
+  let displayContent;
+
+  if (validRefs.length > 0) {
+    // API payload: text + image_ref blocks (refs get expanded to base64 in buildApiMessages)
+    apiContent = [];
+    if (textToSend) apiContent.push({ type: 'text', text: textToSend });
+    validRefs.forEach(r => apiContent.push({ type: 'image_ref', ref: r.ref }));
+
+    // Display payload: text + server URLs (no base64 in memory or JSON)
+    displayContent = { text: textToSend, imageUrls: validRefs.map(r => r.url) };
+  } else {
+    apiContent     = textToSend;
+    displayContent = textToSend;
+  }
+
+  state.messages.push({ role: 'user', content: apiContent });
+  state.displayLog.push({ type: 'message', role: 'user', content: displayContent });
+  appendMessage('user', displayContent, state.displayLog.length - 1);
 
   turnCancelled = false;
 
@@ -171,7 +312,7 @@ async function runChatLoop() {
       api_base:  state.apiBase,
       api_key:   state.apiKey,
       model:     state.model || 'gpt-4o',
-      messages:  buildApiMessages(),
+      messages:  await buildApiMessages(),
       tools:     buildToolsPayload(),
       stream_id: state.streamId,
     }, { signal: turnAbortController.signal });

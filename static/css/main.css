@@ -780,6 +780,30 @@ body::before {
 /* ─── Input Area ────────────────────────────────────────────────────────────── */
 #input-area { border-top: 1px solid var(--border); padding: 14px 20px; background: var(--surface); flex-shrink: 0; }
 
+/* ── Image preview bar ── */
+#image-preview-bar {
+  max-width: 780px; margin: 0 auto 8px;
+  display: flex; flex-wrap: wrap; gap: 8px;
+}
+.img-preview-wrap { position: relative; }
+.img-preview-thumb {
+  width: 64px; height: 64px; object-fit: cover;
+  border-radius: 8px; border: 1px solid var(--border);
+  cursor: pointer; display: block; transition: opacity .2s;
+}
+.img-preview-uploading { opacity: .5; }
+.img-preview-error     { opacity: .4; border-color: var(--red); filter: grayscale(1); }
+.img-preview-remove {
+  position: absolute; top: -6px; right: -6px;
+  width: 18px; height: 18px; border-radius: 50%;
+  background: var(--surface2); border: 1px solid var(--border);
+  color: var(--text2); cursor: pointer;
+  display: flex; align-items: center; justify-content: center; padding: 0;
+  line-height: 1;
+}
+.img-preview-remove svg { width: 10px; height: 10px; }
+.img-preview-remove:hover { background: rgba(224,112,112,.2); color: var(--red); }
+
 .input-wrap {
   max-width: 780px;
   margin: 0 auto;
@@ -791,6 +815,18 @@ body::before {
 }
 .input-wrap:focus-within { border-color: var(--accent-border); box-shadow: 0 0 0 3px var(--accent-glow); }
 
+/* ── Attach button ── */
+#attach-btn {
+  position: absolute; left: 10px; bottom: 9px;
+  width: 32px; height: 32px;
+  background: none; border: none;
+  color: var(--text3); cursor: pointer;
+  display: grid; place-items: center;
+  border-radius: 8px; transition: color .15s, background .15s;
+}
+#attach-btn:hover { color: var(--text); background: var(--hover); }
+#attach-btn svg { width: 16px; height: 16px; }
+
 #user-input {
   width: 100%;
   background: none; border: none;
@@ -799,7 +835,7 @@ body::before {
   font-size: .88rem;
   font-weight: 300;
   line-height: 1.6;
-  padding: 13px 52px 13px 16px;
+  padding: 13px 52px 13px 48px;
   resize: none; outline: none;
   min-height: 50px; max-height: 200px;
   overflow-y: auto; display: block;
@@ -823,6 +859,16 @@ body::before {
 .input-footer { max-width: 780px; margin: 7px auto 0; display: flex; align-items: center; justify-content: space-between; }
 .input-hint { font-family: var(--font-mono); font-size: .62rem; color: var(--text3); }
 .char-count { font-family: var(--font-mono); font-size: .62rem; color: var(--text3); transition: color .15s; }
+
+/* ── Images inside messages ── */
+.msg-images { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+.msg-image {
+  max-width: 280px; max-height: 280px;
+  border-radius: 10px; border: 1px solid var(--border);
+  object-fit: contain; cursor: zoom-in;
+  transition: opacity .15s;
+}
+.msg-image:hover { opacity: .88; }
 .char-count.warn { color: var(--accent); }
 
 /* ─── Modal Base ────────────────────────────────────────────────────────────── */

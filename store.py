@@ -6,13 +6,44 @@ routes call these functions and decide what HTTP status to return.
 """
 from __future__ import annotations
 
+import base64
+import hashlib
 import json
+import re
 import uuid
 from datetime import datetime, timezone
 from pathlib import Path
 
-CONVERSATIONS_DIR = Path("conversations")
-CONVERSATIONS_DIR.mkdir(exist_ok=True)
+CONVERSATIONS_DIR = Path.home() / ".lumen" / "conversations"
+CONVERSATIONS_DIR.mkdir(parents=True, exist_ok=True)
+
+IMAGES_DIR = Path.home() / ".lumen" / "images"
+IMAGES_DIR.mkdir(parents=True, exist_ok=True)
+
+_SAFE_NAME = re.compile(r'^[a-f0-9]{64}\.(png|jpeg|webp|gif)$')
+
+
+# ── Image storage ─────────────────────────────────────────────────────────────
+
+def save_image(data_b64: str, media_type: str) -> str:
+    """Decode base64 image, persist by SHA-256 hash, return filename."""
+    raw  = base64.b64decode(data_b64)
+    ext  = (media_type.split("/")[-1].split(";")[0] or "png").lower()
+    if ext == "jpg":
+        ext = "jpeg"
+    name = hashlib.sha256(raw).hexdigest() + "." + ext
+    path = IMAGES_DIR / name
+    if not path.exists():
+        path.write_bytes(raw)
+    return name
+
+
+def get_image_path(name: str) -> Path | None:
+    """Return the Path for a stored image, or None if it doesn't exist / is unsafe."""
+    if not _SAFE_NAME.match(name):
+        return None
+    path = IMAGES_DIR / name
+    return path if path.exists() else None
 
 
 # ── Internal helpers ──────────────────────────────────────────────────────────

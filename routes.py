@@ -108,6 +108,31 @@ def call_mcp_tool():
     return jsonify({"result": result})
 
 
+# ── Images ────────────────────────────────────────────────────────────────────
+
+@blueprint.route("/api/images", methods=["POST"])
+def upload_image():
+    body = _body()
+    data_b64   = body.get("data", "")
+    media_type = body.get("media_type", "image/png")
+    try:
+        name = store.save_image(data_b64, media_type)
+        return jsonify({"ref": name, "url": f"/api/images/{name}"})
+    except Exception as exc:
+        return jsonify({"error": str(exc)}), 400
+
+
+@blueprint.route("/api/images/<name>", methods=["GET"])
+def serve_image(name: str):
+    from flask import send_file
+    path = store.get_image_path(name)
+    if not path:
+        return jsonify({"error": "Not found"}), 404
+    ext  = name.rsplit(".", 1)[-1]
+    mime = f"image/{'jpeg' if ext == 'jpeg' else ext}"
+    return send_file(path, mimetype=mime)
+
+
 # ── Chat ──────────────────────────────────────────────────────────────────────
 
 @blueprint.route("/api/chat/stream", methods=["POST"])

@@ -297,6 +297,27 @@ export function appendThinkingBlock(reasoningText) {
 }
 
 function appendContentParts(contentEl, content) {
+  // Multipart with images: { text, imageUrls: ['/api/images/...', ...] }
+  if (content && typeof content === 'object' && !Array.isArray(content) && 'imageUrls' in content) {
+    if (content.text) {
+      const textChunk = createElement('div');
+      applyMarkdown(textChunk, content.text);
+      contentEl.appendChild(textChunk);
+    }
+    if (content.imageUrls?.length) {
+      const imgWrap = createElement('div', { className: 'msg-images' });
+      content.imageUrls.forEach(url => {
+        const img = document.createElement('img');
+        img.src = url;
+        img.className = 'msg-image';
+        img.addEventListener('click', () => window.open(url, '_blank'));
+        imgWrap.appendChild(img);
+      });
+      contentEl.appendChild(imgWrap);
+    }
+    return;
+  }
+
   if (typeof content === 'string') {
     applyMarkdown(contentEl, content);
     return;
@@ -314,6 +335,7 @@ function appendContentParts(contentEl, content) {
 
 function getRawText(content) {
   if (typeof content === 'string') return content;
+  if (content && typeof content === 'object' && !Array.isArray(content) && 'imageUrls' in content) return content.text || '';
   if (!Array.isArray(content)) return '';
   return content.map(part => part.text || '').join('\n');
 }
