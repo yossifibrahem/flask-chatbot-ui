@@ -593,6 +593,25 @@ body::before {
   margin: 6px 0 2px;
 }
 
+/* ─── Tool Use Indicator ─────────────────────────────────────────────────────── */
+.tool-use-indicator {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin: 4px 0 6px;
+  font-size: .73rem;
+  font-family: var(--font-mono);
+  font-weight: 400;
+  color: var(--text2);
+}
+
+.tui-name {
+  color: var(--accent);
+  font-weight: 500;
+}
+
+
+
 /* ─── Tool Confirmation ──────────────────────────────────────────────────────── */
 .tc-wrap {
   margin: 6px 0 2px;

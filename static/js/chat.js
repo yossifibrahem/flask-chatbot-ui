@@ -7,6 +7,7 @@ import {
   showToolConfirmation, cancelToolConfirmation, finalizeStreamingMessage, setStreamingMessageLogIndex,
   escapeHtml, scrollToBottom, renderAllMessages,
   createThinkingBlock, updateThinkingBlock, finalizeThinkingBlock,
+  showToolUseIndicator, hideToolUseIndicator,
 } from './renderer.js';
 import { applyMarkdown } from './markdown.js';
 import { executeTool, isServerEnabled, isServerAutoApprove } from './mcp.js';
@@ -250,10 +251,16 @@ function processSSEEvent(raw, ctx) {
     applyMarkdown(el, ctx.accText);
     scrollToBottom();
 
+  } else if (evt.type === 'tool_start') {
+    ctx.removeCursor();
+    showToolUseIndicator(evt.name);
+
   } else if (evt.type === 'tool_calls') {
+    hideToolUseIndicator();
     ctx.toolCalls = evt.calls;
 
   } else if (evt.type === 'error') {
+    hideToolUseIndicator();
     const el = ctx.getContentEl();
     el.classList.remove('cursor-blink');
     el.innerHTML = `<span style="color:var(--red)">Error: ${escapeHtml(evt.message)}</span>`;
@@ -301,6 +308,7 @@ async function runChatLoop() {
     reasoningBodyEl: null,
     toolCalls:      null,
     getContentEl:   () => { if (!contentEl) contentEl = createStreamingMessage(); return contentEl; },
+    removeCursor:   () => contentEl?.classList.remove('cursor-blink'),
   };
 
   state.streamId = crypto.randomUUID();
@@ -318,6 +326,7 @@ async function runChatLoop() {
     }, { signal: turnAbortController.signal });
 
     const success = await readSSEStream(resp, ctx);
+    hideToolUseIndicator();
     if (!success || turnCancelled) return;
 
     if (ctx.reasoningBodyEl) finalizeThinkingBlock(ctx.reasoningBodyEl, ctx.accReasoning);

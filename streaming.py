@@ -52,6 +52,7 @@ def stream_chat_completion(
             request_kwargs["tool_choice"] = "auto"
 
         accumulated_tool_calls: dict[int, dict] = {}
+        announced_tool_indices: set[int] = set()
         openai_stream = client.chat.completions.create(**request_kwargs)
 
         for chunk in openai_stream:
@@ -73,6 +74,11 @@ def stream_chat_completion(
             if delta.tool_calls:
                 for tc in delta.tool_calls:
                     _merge_tool_call_chunk(accumulated_tool_calls, tc)
+                    idx = tc.index
+                    tool_name = accumulated_tool_calls[idx]["function"]["name"]
+                    if idx not in announced_tool_indices and tool_name:
+                        announced_tool_indices.add(idx)
+                        yield sse_event({"type": "tool_start", "name": tool_name})
 
             if chunk.choices and chunk.choices[0].finish_reason == "tool_calls":
                 yield sse_event({"type": "tool_calls", "calls": list(accumulated_tool_calls.values())})

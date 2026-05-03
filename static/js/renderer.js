@@ -16,6 +16,7 @@ const EMPTY_STATE_PROMPTS = [
 const BOTTOM_THRESHOLD = 32;
 let stickToBottom = true;
 let activeToolConfirmation = null;
+let toolUseIndicatorEl = null;
 
 export function escapeHtml(value) {
   return String(value)
@@ -487,6 +488,25 @@ export function renderAllMessages(displayLog) {
     if (entry.type === 'thinking') appendThinkingBlock(entry.content);
   });
   scrollToBottom(true);
+}
+
+export function showToolUseIndicator(toolName) {
+  hideToolUseIndicator();
+  const row = getOrCreateAssistantRow();
+  const el = createElement('div', { className: 'tool-use-indicator' });
+  el.innerHTML = `
+    <span class="tool-icon">${ICONS.toolSmall}</span>
+    <span>using <span class="tui-name">${escapeHtml(toolName)}</span></span>
+    <span class="thinking-pulse"></span>`;
+  row.appendChild(el);
+  toolUseIndicatorEl = el;
+  scrollToBottom();
+}
+
+export function hideToolUseIndicator() {
+  if (!toolUseIndicatorEl) return;
+  toolUseIndicatorEl.remove();
+  toolUseIndicatorEl = null;
 }
 
 export function cancelToolConfirmation() {
