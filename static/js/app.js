@@ -18,7 +18,11 @@ import { clearMessages } from './renderer.js';
 
 function bindSidebarEvents() {
   document.getElementById('btn-toggle-sidebar').addEventListener('click', () => toggleSidebar());
-  document.getElementById('btn-new-chat').addEventListener('click', createNewConversation);
+  document.getElementById('btn-new-chat').addEventListener('click', () => {
+    createNewConversation();
+    if (window.matchMedia('(max-width: 820px)').matches) toggleSidebar(false);
+  });
+  document.getElementById('sidebar-backdrop')?.addEventListener('click', () => toggleSidebar(false));
 }
 
 function bindModelPickerEvents() {
@@ -154,6 +158,7 @@ function bindEvents() {
     clearMessages(); // Show empty state when no conversation exists
   }
 
-  const sidebarOpen = storage.get(STORAGE_KEYS.sidebar, true);
-  if (!sidebarOpen) toggleSidebar(false);
+  const isMobile = window.matchMedia('(max-width: 820px)').matches;
+  const sidebarOpen = isMobile ? false : storage.get(STORAGE_KEYS.sidebar, true);
+  toggleSidebar(sidebarOpen);
 })();

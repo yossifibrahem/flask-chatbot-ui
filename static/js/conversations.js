@@ -5,6 +5,7 @@ import { state }       from './state.js';
 import { storage, }    from './storage.js';
 import { STORAGE_KEYS } from './state.js';
 import { clearMessages, renderAllMessages, escapeHtml } from './renderer.js';
+import { toggleSidebar } from './ui.js';
 
 // ── Sidebar list ──────────────────────────────────────────────────────────────
 
@@ -45,7 +46,11 @@ function _buildConvItem(conv) {
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
     </button>`;
 
-  item.addEventListener('click', e => { if (!e.target.closest('.conv-del')) openConversation(conv.id); });
+  item.addEventListener('click', async e => {
+    if (e.target.closest('.conv-del')) return;
+    await openConversation(conv.id);
+    if (window.matchMedia('(max-width: 820px)').matches) toggleSidebar(false);
+  });
   item.querySelector('.conv-del').addEventListener('click', e => { e.stopPropagation(); deleteConversation(conv.id); });
   return item;
 }

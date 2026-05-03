@@ -29,8 +29,11 @@ export function toggleSidebar(forceOpen) {
   const sidebar = document.getElementById('sidebar');
   const main    = document.getElementById('main');
   const open    = forceOpen !== undefined ? forceOpen : sidebar.classList.contains('collapsed');
+  const isMobile = window.matchMedia('(max-width: 820px)').matches;
+
   sidebar.classList.toggle('collapsed', !open);
-  main.style.marginLeft = open ? '' : '0';
+  document.body.classList.toggle('sidebar-open', open);
+  main.style.marginLeft = open || isMobile ? '' : '0';
   storage.set(STORAGE_KEYS.sidebar, open);
 }
 
