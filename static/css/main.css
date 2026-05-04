@@ -114,6 +114,9 @@ svg { flex-shrink: 0; }
   -webkit-appearance: none;
   background: transparent;
   color: var(--text2);
+  font-size: .73rem;
+  font-weight: 400;
+  line-height: 1.2;
   text-align: left;
   user-select: none;
 }
@@ -133,19 +136,21 @@ svg { flex-shrink: 0; }
 
 :is(.thinking-icon, .tool-icon) { display: inline-flex; align-items: center; opacity: .7; }
 :is(.thinking-body, .tc-item-args, .tr-body) {
-  margin-top: 8px;
+  margin: 8px 0 0;
   padding: 10px 12px;
   background: var(--code-bg);
   border: 1px solid var(--border);
   border-radius: 7px;
+  color: var(--text2);
+  font-size: .74rem;
   animation: fadeUp var(--fast) ease both;
 }
 :is(.thinking-body, .arg-value, .tr-result) {
   white-space: pre-wrap;
   word-break: break-word;
   line-height: 1.55;
-  margin: 0;
 }
+:is(.arg-value, .tr-result) { margin: 0; }
 :is(.arg-name, .tr-section-label) {
   font-size: .68rem;
   font-weight: 600;
@@ -418,10 +423,10 @@ svg { flex-shrink: 0; }
 
 /* ─── Thinking and tool call strips ───────────────────────────────────────── */
 .thinking-block, .tool-strip { margin: 4px 0 6px; }
-.thinking-header { width: 100%; font-size: .73rem; font-weight: 400; }
+:is(.thinking-header, .tr-summary) { width: 100%; }
 .thinking-label { flex: 1; }
 .thinking-pulse { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); animation: thinkPulse 1.1s ease-in-out infinite; }
-.thinking-body { max-height: 320px; overflow-y: auto; color: var(--text2); font-size: .74rem; }
+.thinking-body { max-height: 320px; overflow-y: auto; }
 .thinking-block.thinking-streaming .thinking-label { opacity: .85; }
 .tool-inline, .tool-strip-result { margin: 6px 0 2px; }
 .tool-strip-using, .tool-strip-running { gap: 7px; color: var(--text2); font-size: .73rem; font-weight: 400; }
@@ -430,7 +435,7 @@ svg { flex-shrink: 0; }
 
 .tc-item { margin-bottom: 4px; }
 .tc-item-row { gap: 6px; }
-.tc-item-header { min-width: 0; font-size: .73rem; }
+.tc-item-header { min-width: 0; }
 .tc-item-noargs { margin-left: 2px; color: var(--text3); font-size: .68rem; }
 .tc-item-args { max-height: 200px; overflow-y: auto; }
 .arg-item { margin-bottom: 8px; }
@@ -448,10 +453,10 @@ svg { flex-shrink: 0; }
 .tc-status.allowed { color: var(--green); }
 .tc-status.denied { color: var(--red); }
 
-.tr-summary { width: 100%; font-size: .73rem; }
+
 .tr-section + .tr-section { margin-top: 10px; padding-top: 10px; border-top: 1px solid rgba(255,255,255,.04); }
 .tr-section-label { margin-bottom: 6px; }
-.tr-result { max-height: 200px; overflow-y: auto; color: var(--text2); font-size: .74rem; }
+.tr-result { max-height: 200px; overflow-y: auto; }
 .tr-args { max-height: 200px; overflow-y: auto; padding: 0; border: none; background: none; white-space: normal; }
 
 /* ─── Composer and image previews ─────────────────────────────────────────── */
