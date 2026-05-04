@@ -242,7 +242,7 @@ function createGroupBlock(elements) {
   group.innerHTML = `
     <button class="group-header">
       <span class="group-chevron">${ICONS.chevronRight}</span>
-      <span class="group-icon">${ICONS.brain}</span>
+      <span class="group-icon">${ICONS.stepsGroup}</span>
       <span class="group-label">${count} step${count > 1 ? 's' : ''}</span>
       <span class="group-sep">·</span>
       <span class="group-desc">${escapeHtml(summary)}</span>
@@ -322,7 +322,7 @@ function createThinkingMarkup({ label, chevron, body = '', streaming = false, di
   return `
     <button class="thinking-header">
       <span class="thinking-chevron">${chevron}</span>
-      <span class="thinking-icon">${ICONS.brain}</span>
+      <span class="thinking-icon">${ICONS.bulb}</span>
       <span class="thinking-label">${label}</span>
       ${streaming ? '<span class="thinking-pulse"></span>' : ''}
     </button>

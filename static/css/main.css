@@ -97,16 +97,16 @@ svg { flex-shrink: 0; }
   background: none;
 }
 
-:is(.logo, .msg-meta, .header-actions, .sidebar-action, #btn-new-chat, #model-badge, .mp-header, .tool-card-header, .server-group-header, .server-group-controls, .mcp-toggle-label, .input-footer, .modal-header, .modal-footer, .btn-row, .msg-footer, .msg-action-btn, .tc-item-row, .tc-actions, .tc-allow, .tc-deny, .tc-status, .thinking-header, .tool-strip-using, .tool-strip-running-row, .tc-item-header, .tr-summary) {
+:is(.logo, .msg-meta, .header-actions, .sidebar-action, #btn-new-chat, #model-badge, .mp-header, .tool-card-header, .server-group-header, .server-group-controls, .mcp-toggle-label, .input-footer, .modal-header, .modal-footer, .btn-row, .msg-footer, .msg-action-btn, .tc-item-row, .tc-actions, .tc-allow, .tc-deny, .tc-status, .thinking-header, .tool-strip-using, .tool-strip-running-row, .tc-item-header, .tr-summary, .group-header) {
   display: flex;
   align-items: center;
 }
 
-:is(.conv-section-label, .conv-meta, .msg-role-label, .msg-time, .input-hint, .char-count, .field label, .field-note, .status-msg, .mp-header, .mp-chip, .model-chip, .mp-empty, .btn-primary, .btn-secondary, .tc-item-header, .tr-summary, .thinking-header, .arg-value, .tr-result, .tr-args, .arg-name, .tr-section-label, .tool-card-name, .no-tools-label, #mcp-config-editor, #btn-new-chat, #model-badge, .msg-action-btn, .tc-allow, .tc-deny, .tc-status, .tool-strip-running, .tool-strip-using) {
+:is(.conv-section-label, .conv-meta, .msg-role-label, .msg-time, .input-hint, .char-count, .field label, .field-note, .status-msg, .mp-header, .mp-chip, .model-chip, .mp-empty, .btn-primary, .btn-secondary, .tc-item-header, .tr-summary, .thinking-header, .arg-value, .tr-result, .tr-args, .arg-name, .tr-section-label, .tool-card-name, .no-tools-label, #mcp-config-editor, #btn-new-chat, #model-badge, .msg-action-btn, .tc-allow, .tc-deny, .tc-status, .tool-strip-running, .tool-strip-using, .group-header) {
   font-family: var(--font-mono);
 }
 
-:is(.thinking-header, .tc-item-header, .tr-summary) {
+:is(.thinking-header, .tc-item-header, .tr-summary, .group-header) {
   gap: 7px;
   padding: 0;
   border: none;
@@ -119,22 +119,23 @@ svg { flex-shrink: 0; }
   line-height: 1.2;
   text-align: left;
   user-select: none;
+  cursor: pointer;
 }
-:is(.thinking-header, .tc-item-header, .tr-summary):hover { color: var(--text); }
+:is(.thinking-header, .tc-item-header, .tr-summary, .group-header):hover { color: var(--text); }
 
-:is(.thinking-chevron, .tc-item-chevron, .tr-chevron) {
+:is(.thinking-chevron, .tc-item-chevron, .tr-chevron, .group-chevron) {
   color: var(--text3);
   display: inline-flex;
   align-items: center;
 }
-:is(.thinking-header:hover .thinking-chevron, .tc-item-header:hover .tc-item-chevron, .tr-summary:hover .tr-chevron) { color: var(--text2); }
+:is(.thinking-header:hover .thinking-chevron, .tc-item-header:hover .tc-item-chevron, .tr-summary:hover .tr-chevron, .group-header:hover .group-chevron) { color: var(--text2); }
 
-:is(.thinking-label, .tui-name, .tc-item-name, .tr-tool-name, .tool-card-name, .server-group-name) {
+:is(.thinking-label, .tui-name, .tc-item-name, .tr-tool-name, .tool-card-name, .server-group-name, .group-label) {
   color: var(--accent);
   font-weight: 500;
 }
 
-:is(.thinking-icon, .tool-icon) { display: inline-flex; align-items: center; opacity: .7; }
+:is(.thinking-icon, .tool-icon, .group-icon) { display: inline-flex; align-items: center; opacity: .7; }
 :is(.thinking-body, .tc-item-args, .tr-body) {
   margin: 8px 0 0;
   padding: 10px 12px;
@@ -423,7 +424,7 @@ svg { flex-shrink: 0; }
 
 /* ─── Thinking and tool call strips ───────────────────────────────────────── */
 .thinking-block, .tool-strip { margin: 4px 0 6px; }
-:is(.thinking-header, .tr-summary) { width: 100%; }
+:is(.thinking-header, .tr-summary, .group-header) { width: 100%; }
 .thinking-label { flex: 1; }
 .thinking-pulse { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); animation: thinkPulse 1.1s ease-in-out infinite; }
 .thinking-body { max-height: 320px; overflow-y: auto; }
@@ -435,29 +436,6 @@ svg { flex-shrink: 0; }
 
 /* ── Block group (collapsed consecutive thinking + tool strips) ─────────────── */
 .block-group { margin: 4px 0 8px; }
-.group-header {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  padding: 0;
-  border: none;
-  appearance: none;
-  -webkit-appearance: none;
-  background: transparent;
-  color: var(--text2);
-  font-family: var(--font-mono);
-  font-size: .73rem;
-  font-weight: 400;
-  line-height: 1.2;
-  text-align: left;
-  user-select: none;
-  cursor: pointer;
-}
-.group-header:hover { color: var(--text); }
-.group-chevron { color: var(--text3); display: inline-flex; align-items: center; }
-.group-header:hover .group-chevron { color: var(--text2); }
-.group-icon { display: inline-flex; align-items: center; opacity: .7; }
-.group-label { color: var(--accent); font-weight: 500; }
 .group-sep { color: var(--text3); }
 .group-desc { color: var(--text3); }
 .group-body {
