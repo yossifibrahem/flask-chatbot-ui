@@ -476,7 +476,7 @@ svg { flex-shrink: 0; }
 #send-btn:hover { opacity: .88; transform: scale(1.04); }
 #send-btn:disabled { opacity: .3; transform: none; }
 #send-btn svg, #stop-btn svg { width: 14px; height: 14px; }
-#stop-btn { display: none; border: 1px solid rgba(224,112,112,.3); background: rgba(224,112,112,.15); color: var(--red); }
+#stop-btn { border: 1px solid rgba(224,112,112,.3); background: rgba(224,112,112,.15); color: var(--red); }
 #stop-btn:hover { background: rgba(224,112,112,.25); }
 .input-footer { max-width: var(--input-w); margin: 7px auto 0; justify-content: space-between; }
 .input-hint, .char-count { color: var(--text3); font-size: .62rem; }
