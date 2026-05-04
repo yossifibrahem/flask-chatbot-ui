@@ -2,3 +2,4 @@ conversations
 .DS_Store
 mcp.json
 __pycache__
+.venv
