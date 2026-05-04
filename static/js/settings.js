@@ -76,6 +76,6 @@ function _renderChips(container, chipClass, models) {
   });
 }
 
-export function updateModelBadge() {
+function updateModelBadge() {
   document.getElementById('model-badge-label').textContent = state.model || 'No model';
 }

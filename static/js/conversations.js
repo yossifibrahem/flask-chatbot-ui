@@ -1,9 +1,8 @@
 // Conversation management — talking to /api/conversations and updating the sidebar.
 
 import { api }         from './api.js';
-import { state }       from './state.js';
-import { storage, }    from './storage.js';
-import { STORAGE_KEYS } from './state.js';
+import { state, STORAGE_KEYS } from './state.js';
+import { storage } from './storage.js';
 import { clearMessages, renderAllMessages, escapeHtml } from './renderer.js';
 import { toggleSidebar } from './ui.js';
 
@@ -61,7 +60,7 @@ export async function openConversation(id) {
   storage.set(STORAGE_KEYS.lastConv, id);
   document.getElementById('chat-title-input').value = data.title || '';
   renderAllMessages(state.displayLog);
-  loadConversationList();
+  await loadConversationList();
   if (window.innerWidth <= 768) toggleSidebar(false);
 }
 
@@ -73,7 +72,7 @@ export async function createNewConversation() {
   storage.set(STORAGE_KEYS.lastConv, data.id);
   document.getElementById('chat-title-input').value = 'New Conversation';
   clearMessages();
-  loadConversationList();
+  await loadConversationList();
 }
 
 export async function deleteConversation(convId) {
@@ -83,9 +82,10 @@ export async function deleteConversation(convId) {
     state.convId     = null;
     state.messages   = [];
     state.displayLog = [];
+    storage.remove(STORAGE_KEYS.lastConv);
     clearMessages();
   }
-  loadConversationList();
+  await loadConversationList();
 }
 
 export async function persistConversation() {
@@ -94,5 +94,5 @@ export async function persistConversation() {
   await api.put(`/api/conversations/${state.convId}`, {
     title, messages: state.messages, displayLog: state.displayLog,
   });
-  loadConversationList();
+  await loadConversationList();
 }

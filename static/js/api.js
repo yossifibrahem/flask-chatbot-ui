@@ -2,6 +2,17 @@
 
 const JSON_HEADERS = { 'Content-Type': 'application/json' };
 
+async function parseJson(response) {
+  const text = await response.text();
+  if (!text) return {};
+
+  try {
+    return JSON.parse(text);
+  } catch {
+    return { error: text };
+  }
+}
+
 async function request(url, { method = 'GET', body, signal } = {}) {
   const response = await fetch(url, {
     method,
@@ -9,7 +20,10 @@ async function request(url, { method = 'GET', body, signal } = {}) {
     body: body === undefined ? undefined : JSON.stringify(body),
     signal,
   });
-  return response.json();
+
+  const data = await parseJson(response);
+  if (!response.ok && !data.error) data.error = response.statusText || `HTTP ${response.status}`;
+  return data;
 }
 
 export const api = {

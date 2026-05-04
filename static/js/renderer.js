@@ -4,7 +4,6 @@
 import { applyMarkdown } from './markdown.js';
 import { $, createElement, remove, setVisible } from './dom.js';
 import { ICONS } from './icons.js';
-import { state } from './state.js';
 
 const EMPTY_STATE_PROMPTS = [
   { tag: 'EXPLAIN', label: 'How do transformers work in machine learning?', prompt: 'Explain how transformers work in machine learning' },
@@ -214,7 +213,7 @@ function startInlineEdit(row, logIndex, currentText, currentContent = null) {
 
 function toggleCollapsible(block, body, chevron) {
   const isOpen = block.classList.toggle('open');
-  chevron.innerHTML = isOpen ? ICONS.chevronDown : ICONS.chevronRight;
+  if (chevron) chevron.innerHTML = isOpen ? ICONS.chevronDown : ICONS.chevronRight;
   setVisible(body, isOpen);
   return isOpen;
 }
@@ -397,8 +396,6 @@ export function setStreamingMessageLogIndex(contentEl, logIndex) {
   // Update the regenerate button's logIndex closure by replacing the footer
   const footerEl = row.querySelector('.msg-footer');
   if (!footerEl) return;
-  // Find existing copy text via button
-  const copyBtn = footerEl.querySelector('.msg-action-btn');
   const getText = () => {
     const el = row.querySelector('.msg-content');
     return el ? el.textContent : '';

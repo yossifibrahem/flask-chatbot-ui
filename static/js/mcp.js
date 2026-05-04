@@ -119,7 +119,7 @@ function groupToolsByServer(tools) {
   }, {});
 }
 
-export function renderToolList() {
+function renderToolList() {
   loadServerSettings();
   const container = document.getElementById('tool-list');
 
@@ -156,7 +156,7 @@ export async function executeTool(tc, options = {}) {
     const data = await api.post('/api/mcp/call', {
       server: toolDef.server, tool: tc.function.name, arguments: args,
     }, { signal: options.signal });
-    return data.result || data.error || '';
+    return data.result ?? data.error ?? '';
   } catch (err) {
     return `Error: ${err.message}`;
   }

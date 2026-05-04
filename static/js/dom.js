@@ -1,7 +1,6 @@
 // DOM helpers shared by UI modules.
 
 export const $ = (selector, root = document) => root.querySelector(selector);
-export const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
 
 export function createElement(tag, { className = '', html = '', text = '', attrs = {} } = {}) {
   const element = document.createElement(tag);
@@ -21,6 +20,3 @@ export function remove(selectorOrElement, root = document) {
   element?.remove();
 }
 
-export function bindClick(selector, handler, root = document) {
-  $$(selector, root).forEach(element => element.addEventListener('click', handler));
-}

@@ -156,10 +156,29 @@ async function buildApiMessages() {
 
 // ── Streaming state ───────────────────────────────────────────────────────────
 
-export function setStreaming(active) {
+function setStreaming(active) {
   state.isStreaming = active;
   document.getElementById('send-btn').hidden = active;
   document.getElementById('stop-btn').hidden = !active;
+}
+
+function finishAssistantTurn() {
+  turnAbortController?.abort();
+  turnAbortController = null;
+  state.streamId = null;
+  setStreaming(false);
+}
+
+async function runAssistantTurnAndPersist() {
+  setStreaming(true);
+  turnCancelled = false;
+
+  try {
+    await runChatLoop();
+    await persistConversation();
+  } finally {
+    finishAssistantTurn();
+  }
 }
 
 export async function stopAssistantTurn() {
@@ -220,17 +239,7 @@ export async function sendMessage(userText) {
   state.displayLog.push({ type: 'message', role: 'user', content: displayContent });
   appendMessage('user', displayContent, state.displayLog.length - 1);
 
-  turnCancelled = false;
-
-  try {
-    await runChatLoop();
-    await persistConversation();
-  } finally {
-    turnAbortController?.abort();
-    turnAbortController = null;
-    state.streamId = null;
-    setStreaming(false);
-  }
+  await runAssistantTurnAndPersist();
 }
 
 // ── SSE helpers ───────────────────────────────────────────────────────────────
@@ -274,8 +283,21 @@ function processSSEEvent(raw, ctx) {
   return true;
 }
 
+async function readResponseError(resp) {
+  const text = await resp.text().catch(() => '');
+  if (!text) return resp.statusText || `HTTP ${resp.status}`;
+
+  try {
+    const data = JSON.parse(text);
+    return data.error || text;
+  } catch {
+    return text;
+  }
+}
+
 /** Reads the SSE response body line-by-line, calling processSSEEvent for each data event. */
 async function readSSEStream(resp, ctx) {
+  if (!resp.body) throw new Error('Streaming response has no body.');
   const reader  = resp.body.getReader();
   const decoder = new TextDecoder();
   let   buffer  = '';
@@ -329,6 +351,8 @@ async function runChatLoop() {
       tools:     buildToolsPayload(),
       stream_id: state.streamId,
     }, { signal: turnAbortController.signal });
+
+    if (!resp.ok) throw new Error(await readResponseError(resp));
 
     const success = await readSSEStream(resp, ctx);
     if (!success || turnCancelled) return;
@@ -406,17 +430,7 @@ export async function editAndResend(logIndex, newText, imageUrls = []) {
   state.displayLog.push({ type: 'message', role: 'user', content: displayContent });
   appendMessage('user', displayContent, state.displayLog.length - 1);
 
-  setStreaming(true);
-  turnCancelled = false;
-  try {
-    await runChatLoop();
-    await persistConversation();
-  } finally {
-    turnAbortController?.abort();
-    turnAbortController = null;
-    state.streamId = null;
-    setStreaming(false);
-  }
+  await runAssistantTurnAndPersist();
 }
 
 // ── Regenerate ────────────────────────────────────────────────────────────────
@@ -441,17 +455,7 @@ export async function regenerateFrom(logIndex) {
   renderAllMessages(state.displayLog);
 
   if (!state.convId) return;
-  setStreaming(true);
-  turnCancelled = false;
-  try {
-    await runChatLoop();
-    await persistConversation();
-  } finally {
-    turnAbortController?.abort();
-    turnAbortController = null;
-    state.streamId = null;
-    setStreaming(false);
-  }
+  await runAssistantTurnAndPersist();
 }
 
 // ── Tool-call orchestration ───────────────────────────────────────────────────

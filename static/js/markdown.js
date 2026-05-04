@@ -18,7 +18,7 @@ const PURIFY_CONFIG = {
   ],
 };
 
-export function renderMarkdown(text) {
+function renderMarkdown(text) {
   const latexBlocks = [];
   const stash = (block) => {
     latexBlocks.push(block);

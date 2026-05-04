@@ -148,7 +148,12 @@ function bindEvents() {
 
   const lastConvId = storage.get(STORAGE_KEYS.lastConv);
   if (lastConvId) {
-    try { await openConversation(lastConvId); } catch {}
+    try {
+      await openConversation(lastConvId);
+    } catch {
+      storage.remove(STORAGE_KEYS.lastConv);
+      clearMessages();
+    }
   } else {
     clearMessages(); // Show empty state when no conversation exists
   }
