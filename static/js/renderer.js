@@ -218,6 +218,95 @@ function toggleCollapsible(block, body, chevron) {
   return isOpen;
 }
 
+// ── Block Grouping ─────────────────────────────────────────────────────────────
+// Consecutive finalized thinking blocks and tool strips are eagerly collapsed
+// into a single expandable group as each one finishes — not deferred until text.
+
+function makeGroupSummary(elements) {
+  let thinks = 0, tools = 0;
+  elements.forEach(el => {
+    if (el.classList.contains('thinking-block')) thinks++;
+    else if (el.classList.contains('tool-strip')) tools++;
+  });
+  const parts = [];
+  if (thinks) parts.push(`${thinks} thinking`);
+  if (tools) parts.push(`${tools} tool use`);
+  return parts.join(' + ');
+}
+
+function createGroupBlock(elements) {
+  const count = elements.length;
+  const summary = makeGroupSummary(elements);
+
+  const group = createElement('div', { className: 'block-group' });
+  group.innerHTML = `
+    <button class="group-header">
+      <span class="group-chevron">${ICONS.chevronRight}</span>
+      <span class="group-icon">${ICONS.brain}</span>
+      <span class="group-label">${count} step${count > 1 ? 's' : ''}</span>
+      <span class="group-sep">·</span>
+      <span class="group-desc">${escapeHtml(summary)}</span>
+    </button>
+    <div class="group-body" style="display:none"></div>`;
+
+  const header  = group.querySelector('.group-header');
+  const body    = group.querySelector('.group-body');
+  const chevron = group.querySelector('.group-chevron');
+
+  header.addEventListener('click', () => {
+    const isOpen = group.classList.toggle('open');
+    chevron.innerHTML = isOpen ? ICONS.chevronDown : ICONS.chevronRight;
+    setVisible(body, isOpen);
+  });
+
+  return group;
+}
+
+/** Re-reads the group body children and refreshes the count + summary in the header. */
+function updateGroupLabel(group) {
+  const body     = group.querySelector('.group-body');
+  const elements = [...body.children];
+  const count    = elements.length;
+  const summary  = makeGroupSummary(elements);
+  const lbl = group.querySelector('.group-label');
+  const dsc = group.querySelector('.group-desc');
+  if (lbl) lbl.textContent = `${count} step${count !== 1 ? 's' : ''}`;
+  if (dsc) dsc.textContent = summary;
+}
+
+/**
+ * Called immediately after a thinking block or tool strip is fully finalized.
+ * Checks the element's previous sibling in the same row:
+ *   • previous sibling is a .block-group  → extend that group with this element
+ *   • previous sibling is a finished block → create a new group containing both
+ *   • otherwise                            → leave the single block ungrouped for now
+ * This runs eagerly (one element at a time) so groups grow incrementally during
+ * streaming rather than being assembled all at once when text appears.
+ */
+function tryGroupAfterFinalize(el) {
+  const row = el.parentElement;
+  if (!row) return;
+
+  const prev = el.previousElementSibling;
+  if (!prev) return;
+
+  if (prev.classList.contains('block-group')) {
+    // Extend the existing group: move el into its body and refresh the label.
+    const body = prev.querySelector('.group-body');
+    body.appendChild(el);          // moves el out of row and into the group body
+    updateGroupLabel(prev);
+  } else if (prev.classList.contains('thinking-block') ||
+             prev.classList.contains('tool-strip')) {
+    // Two consecutive finished blocks — wrap them in a new collapsed group.
+    const group = createGroupBlock([prev, el]);
+    row.insertBefore(group, prev); // insert group at prev's position
+    const body = group.querySelector('.group-body');
+    body.appendChild(prev);        // move prev into group
+    body.appendChild(el);          // move el into group
+  }
+  // Single block with a non-groupable predecessor: leave it in place.
+}
+
 function attachCollapsible(block, { headerSelector, bodySelector, chevronSelector, markManualToggle = false }) {
   const header = block.querySelector(headerSelector);
   const body = block.querySelector(bodySelector);
@@ -278,6 +367,9 @@ export function finalizeThinkingBlock(bodyEl, fullText) {
     block.querySelector('.thinking-chevron').innerHTML = ICONS.chevronRight;
     setVisible(bodyEl, false);
   }
+
+  // Eagerly group this block with any adjacent finished blocks.
+  tryGroupAfterFinalize(block);
 }
 
 export function appendThinkingBlock(reasoningText) {
@@ -300,6 +392,8 @@ export function appendThinkingBlock(reasoningText) {
   });
 
   row.appendChild(block);
+  // Eagerly group with adjacent finished blocks (history replay path).
+  tryGroupAfterFinalize(block);
   scrollToBottom();
 }
 
@@ -380,13 +474,20 @@ export function createStreamingMessage() {
 }
 
 export function finalizeStreamingMessage(contentEl, text) {
+  // If this turn produced no text (tool-only round), the placeholder element
+  // is no longer needed and must be removed so it doesn't act as a barrier
+  // between the preceding group and the next thinking/tool blocks.
+  if (!text || !text.trim()) {
+    contentEl.remove();
+    return;
+  }
+
   contentEl.classList.remove('cursor-blink');
   applyMarkdown(contentEl, text);
 
   const row = contentEl.parentElement;
   row.querySelector('.msg-footer')?.remove();
-  // logIndex will be set after state.displayLog.push() via setStreamingMessageLogIndex
-  if (text) addAssistantFooter(row, () => text, -1);
+  addAssistantFooter(row, () => text, -1);
 }
 
 export function setStreamingMessageLogIndex(contentEl, logIndex) {
@@ -458,6 +559,8 @@ function appendToolResultInline(toolName, args, result) {
     chevronSelector: '.tr-chevron',
   });
   row.appendChild(strip);
+  // Eagerly group with adjacent finished blocks (history replay path).
+  tryGroupAfterFinalize(strip);
   scrollToBottom();
 }
 
@@ -592,6 +695,9 @@ export function toolStripFinalize(strip, toolName, args, result) {
     bodySelector: '.tr-body',
     chevronSelector: '.tr-chevron',
   });
+
+  // Eagerly group this strip with any adjacent finished blocks.
+  tryGroupAfterFinalize(strip);
   scrollToBottom();
 }
 

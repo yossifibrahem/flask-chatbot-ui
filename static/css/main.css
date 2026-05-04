@@ -433,6 +433,39 @@ svg { flex-shrink: 0; }
 .tool-strip-running { display: block; }
 .tool-strip-running-row { gap: 7px; }
 
+/* ── Block group (collapsed consecutive thinking + tool strips) ─────────────── */
+.block-group { margin: 4px 0 8px; }
+.group-header {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 0;
+  border: none;
+  appearance: none;
+  -webkit-appearance: none;
+  background: transparent;
+  color: var(--text2);
+  font-family: var(--font-mono);
+  font-size: .73rem;
+  font-weight: 400;
+  line-height: 1.2;
+  text-align: left;
+  user-select: none;
+  cursor: pointer;
+}
+.group-header:hover { color: var(--text); }
+.group-chevron { color: var(--text3); display: inline-flex; align-items: center; }
+.group-header:hover .group-chevron { color: var(--text2); }
+.group-icon { display: inline-flex; align-items: center; opacity: .7; }
+.group-label { color: var(--accent); font-weight: 500; }
+.group-sep { color: var(--text3); }
+.group-desc { color: var(--text3); }
+.group-body {
+  margin: 6px 0 2px 4px;
+  padding-left: 10px;
+  border-left: 1px solid var(--border);
+}
+
 .tc-item { margin-bottom: 4px; }
 .tc-item-row { gap: 6px; }
 .tc-item-header { min-width: 0; }
