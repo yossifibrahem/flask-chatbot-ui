@@ -15,8 +15,8 @@ const EMPTY_STATE_PROMPTS = [
 
 const BOTTOM_THRESHOLD = 32;
 let stickToBottom = true;
-let activeToolConfirmation = null;
-let toolUseIndicatorEl = null;
+// Canceller functions for any strips currently awaiting user approval
+const activeApprovalCancellers = new Set();
 
 export function escapeHtml(value) {
   return String(value)
@@ -444,10 +444,144 @@ function createToolResultBody(args, result) {
     ${resultHtml}`;
 }
 
-export function appendToolResult(toolName, args, result) {
+// appendToolResult is used by renderAllMessages for history replay
+function appendToolResultInline(toolName, args, result) {
   const row = prepareAssistantRow();
-  const strip = createElement('div', { className: 'tool-inline' });
+  const strip = createElement('div', { className: 'tool-strip tool-strip-result tool-inline' });
+  strip.innerHTML = `
+    <button class="tr-summary">
+      <span class="tr-chevron">${ICONS.chevronRight}</span>
+      <span class="tool-icon">${ICONS.toolSmall}</span>
+      <span class="tr-tool-name">${escapeHtml(toolName)}</span>
+    </button>
+    <div class="tr-body" style="display:none">${createToolResultBody(args, result)}</div>`;
+  attachCollapsible(strip, {
+    headerSelector: '.tr-summary',
+    bodySelector: '.tr-body',
+    chevronSelector: '.tr-chevron',
+  });
+  row.appendChild(strip);
+  scrollToBottom();
+}
 
+export function renderAllMessages(displayLog) {
+  messagesEl().innerHTML = '';
+  displayLog.forEach((entry, idx) => {
+    if (entry.type === 'message') appendMessage(entry.role, entry.content, idx);
+    if (entry.type === 'tool_result') appendToolResultInline(entry.name, entry.args, entry.result);
+    if (entry.type === 'thinking') appendThinkingBlock(entry.content);
+  });
+  scrollToBottom(true);
+}
+
+// ── Unified Tool Strip ────────────────────────────────────────────────────────
+// Each tool call gets ONE element that morphs through: using → approval → running → result.
+
+/** Creates the strip in "using" state and appends it to the current assistant row. */
+export function createToolStrip(toolName) {
+  const row = prepareAssistantRow();
+  const strip = createElement('div', { className: 'tool-strip tool-strip-using' });
+  strip.dataset.toolName = toolName;
+  strip.innerHTML = `
+    <span class="tool-icon">${ICONS.toolSmall}</span>
+    <span>using <span class="tui-name">${escapeHtml(toolName)}</span></span>
+    <span class="thinking-pulse"></span>`;
+  row.appendChild(strip);
+  scrollToBottom();
+  return strip;
+}
+
+/** Morphs strip into approval state. Returns a Promise<boolean> that resolves when the user decides. */
+export function toolStripSetApproval(strip, call) {
+  return new Promise(resolve => {
+    let args = {};
+    try { args = JSON.parse(call.function.arguments || '{}'); } catch {}
+    const hasArgs = Object.keys(args).length > 0;
+
+    strip.className = 'tool-strip tool-strip-approval tc-item open';
+    strip.innerHTML = `
+      <div class="tc-item-row">
+        <button class="tc-item-header">
+          <span class="tc-item-chevron">${ICONS.chevronDown}</span>
+          <span class="tool-icon">${ICONS.toolSmall}</span>
+          <span class="tc-item-name">${escapeHtml(call.function.name)}</span>
+          ${hasArgs ? '' : '<span class="tc-item-noargs">no arguments</span>'}
+        </button>
+        <span class="tc-actions">
+          <button class="tc-allow">${ICONS.check} allow</button>
+          <button class="tc-deny">${ICONS.close} deny</button>
+        </span>
+        <span class="tc-status" aria-live="polite"></span>
+      </div>
+      ${hasArgs ? `<div class="tc-item-args" style="display:block">${formatArgsHtml(args)}</div>` : ''}`;
+
+    if (hasArgs) {
+      attachCollapsible(strip, {
+        headerSelector: '.tc-item-header',
+        bodySelector: '.tc-item-args',
+        chevronSelector: '.tc-item-chevron',
+      });
+    }
+
+    let settled = false;
+    const decide = allowed => {
+      if (settled) return;
+      settled = true;
+      activeApprovalCancellers.delete(cancel);
+
+      strip.querySelectorAll('.tc-allow, .tc-deny').forEach(btn => {
+        btn.disabled = true;
+        setVisible(btn, false);
+      });
+      const status = strip.querySelector('.tc-status');
+      if (status) {
+        status.className = `tc-status ${allowed ? 'allowed' : 'denied'}`;
+        status.innerHTML = allowed ? `${ICONS.check} allowed` : `${ICONS.close} denied`;
+      }
+      resolve(allowed);
+    };
+
+    const cancel = () => decide(false);
+    activeApprovalCancellers.add(cancel);
+
+    strip.querySelector('.tc-allow')?.addEventListener('click', () => decide(true));
+    strip.querySelector('.tc-deny')?.addEventListener('click',  () => decide(false));
+    scrollToBottom();
+  });
+}
+
+/** Morphs strip from approval → running state. */
+export function toolStripSetRunning(strip, args = {}) {
+  const name = strip.dataset.toolName || '';
+  const hasArgs = Object.keys(args).length > 0;
+  strip.className = 'tool-strip tool-strip-running';
+  strip.innerHTML = `
+    <div class="tool-strip-running-row">
+      ${hasArgs
+        ? `<button class="tc-item-header">
+             <span class="tc-item-chevron">${ICONS.chevronRight}</span>
+             <span class="tool-icon">${ICONS.toolSmall}</span>
+             <span>running <span class="tui-name">${escapeHtml(name)}</span></span>
+           </button>`
+        : `<span class="tool-icon">${ICONS.toolSmall}</span>
+           <span>running <span class="tui-name">${escapeHtml(name)}</span></span>`}
+      <span class="thinking-pulse"></span>
+    </div>
+    ${hasArgs ? `<div class="tc-item-args" style="display:none">${formatArgsHtml(args)}</div>` : ''}`;
+
+  if (hasArgs) {
+    attachCollapsible(strip, {
+      headerSelector: '.tc-item-header',
+      bodySelector:   '.tc-item-args',
+      chevronSelector: '.tc-item-chevron',
+    });
+  }
+  scrollToBottom();
+}
+
+/** Morphs strip into the final collapsible result state. */
+export function toolStripFinalize(strip, toolName, args, result) {
+  strip.className = 'tool-strip tool-strip-result tool-inline';
   strip.innerHTML = `
     <button class="tr-summary">
       <span class="tr-chevron">${ICONS.chevronRight}</span>
@@ -461,143 +595,11 @@ export function appendToolResult(toolName, args, result) {
     bodySelector: '.tr-body',
     chevronSelector: '.tr-chevron',
   });
-
-  row.appendChild(strip);
   scrollToBottom();
 }
 
-export function renderAllMessages(displayLog) {
-  messagesEl().innerHTML = '';
-  displayLog.forEach((entry, idx) => {
-    if (entry.type === 'message') appendMessage(entry.role, entry.content, idx);
-    if (entry.type === 'tool_result') appendToolResult(entry.name, entry.args, entry.result);
-    if (entry.type === 'thinking') appendThinkingBlock(entry.content);
-  });
-  scrollToBottom(true);
-}
-
-export function showToolUseIndicator(toolName, label = 'using') {
-  hideToolUseIndicator();
-  const row = prepareAssistantRow();
-  const el = createElement('div', { className: 'tool-use-indicator' });
-  el.innerHTML = `
-    <span class="tool-icon">${ICONS.toolSmall}</span>
-    <span>${escapeHtml(label)} <span class="tui-name">${escapeHtml(toolName)}</span></span>
-    <span class="thinking-pulse"></span>`;
-  row.appendChild(el);
-  toolUseIndicatorEl = el;
-  scrollToBottom();
-}
-
-export function hideToolUseIndicator() {
-  if (!toolUseIndicatorEl) return;
-  toolUseIndicatorEl.remove();
-  toolUseIndicatorEl = null;
-}
-
-export function cancelToolConfirmation() {
-  activeToolConfirmation?.cancel();
-}
-
-function parseToolArguments(call) {
-  try { return JSON.parse(call.function.arguments || '{}'); }
-  catch { return {}; }
-}
-
-function createToolDecisionItem(call, idx, decide) {
-  const args = parseToolArguments(call);
-  const hasArgs = Object.keys(args).length > 0;
-  const item = createElement('div', { className: 'tc-item open' });
-
-  item.innerHTML = `
-    <div class="tc-item-row">
-      <button class="tc-item-header">
-        <span class="tc-item-chevron">${ICONS.chevronDown}</span>
-        <span class="tool-icon">${ICONS.toolSmall}</span>
-        <span class="tc-item-name">${escapeHtml(call.function.name)}</span>
-        ${hasArgs ? '' : '<span class="tc-item-noargs">no arguments</span>'}
-      </button>
-      <span class="tc-actions">
-        <button class="tc-allow">${ICONS.check} allow</button>
-        <button class="tc-deny">${ICONS.close} deny</button>
-      </span>
-      <span class="tc-status" aria-live="polite"></span>
-    </div>
-    ${hasArgs ? `<div class="tc-item-args" style="display:block">${formatArgsHtml(args)}</div>` : ''}`;
-
-  if (hasArgs) {
-    attachCollapsible(item, {
-      headerSelector: '.tc-item-header',
-      bodySelector: '.tc-item-args',
-      chevronSelector: '.tc-item-chevron',
-    });
-  }
-
-  item.querySelector('.tc-allow').addEventListener('click', () => decide(idx, true, item));
-  item.querySelector('.tc-deny').addEventListener('click', () => decide(idx, false, item));
-  return item;
-}
-
-function markDecision(item, allowed) {
-  item.classList.add('decided');
-  item.querySelectorAll('.tc-allow, .tc-deny').forEach(button => {
-    button.disabled = true;
-    setVisible(button, false);
-  });
-
-  const status = item.querySelector('.tc-status');
-  if (!status) return;
-
-  status.className = `tc-status ${allowed ? 'allowed' : 'denied'}`;
-  status.innerHTML = allowed ? `${ICONS.check} allowed` : `${ICONS.close} denied`;
-}
-
-export function showToolConfirmation(calls) {
-  cancelToolConfirmation();
-
-  return new Promise(resolve => {
-    const row = prepareAssistantRow();
-    const wrap = createElement('div', { className: 'tc-wrap' });
-    row.appendChild(wrap);
-    scrollToBottom();
-
-    const decisions = new Array(calls.length).fill(null);
-    let pending = calls.length;
-    let settled = false;
-    let timerId = null;
-
-    const cleanup = () => {
-      if (activeToolConfirmation?.wrap === wrap) activeToolConfirmation = null;
-      wrap.style.transition = 'opacity .2s';
-      wrap.style.opacity = '0';
-      timerId = setTimeout(() => wrap.remove(), 200);
-    };
-
-    const settle = value => {
-      if (settled) return;
-      settled = true;
-      cleanup();
-      resolve(value);
-    };
-
-    const decide = (idx, allowed, item) => {
-      if (settled || decisions[idx] !== null) return;
-
-      decisions[idx] = allowed;
-      pending -= 1;
-      markDecision(item, allowed);
-
-      if (pending === 0) settle(decisions);
-    };
-
-    activeToolConfirmation = {
-      wrap,
-      cancel: () => {
-        if (timerId) clearTimeout(timerId);
-        settle(null);
-      },
-    };
-
-    calls.forEach((call, idx) => wrap.appendChild(createToolDecisionItem(call, idx, decide)));
-  });
+/** Cancels all strips currently waiting for user approval (called on stop). */
+export function cancelAllToolApprovals() {
+  activeApprovalCancellers.forEach(cancel => cancel());
+  activeApprovalCancellers.clear();
 }

@@ -560,29 +560,50 @@ body::before {
   margin: 6px 0 2px;
 }
 
-/* ─── Tool Use Indicator ─────────────────────────────────────────────────────── */
-.tool-use-indicator {
+/* ─── Unified Tool Strip ─────────────────────────────────────────────────────── */
+/* One element per tool call that morphs through: using → approval → running → result */
+.tool-strip {
+  margin: 4px 0 6px;
+}
+
+/* "using" state: flat inline spans, strip itself is the flex row */
+.tool-strip-using {
   display: flex;
   align-items: center;
   gap: 7px;
-  margin: 4px 0 6px;
   font-size: .73rem;
   font-family: var(--font-mono);
   font-weight: 400;
   color: var(--text2);
 }
 
-.tui-name {
-  color: var(--accent);
-  font-weight: 500;
+/* "running" state: block container so header row and args stack vertically */
+.tool-strip-running {
+  font-size: .73rem;
+  font-family: var(--font-mono);
+  font-weight: 400;
+  color: var(--text2);
 }
+
+/* Inner flex row for the running header (icon + label + pulse) */
+.tool-strip-running-row {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+/* "result" state gets the same spacing as the old tool-inline */
+.tool-strip-result {
+  margin: 6px 0 2px;
+}
+
+/* "approval" state reuses tc-item layout; no extra rules needed */
+
+.tui-name { color: var(--accent); font-weight: 500; }
 
 
 
 /* ─── Tool Confirmation ──────────────────────────────────────────────────────── */
-.tc-wrap {
-  margin: 6px 0 2px;
-}
 
 /* One row per tool call */
 .tc-item {
@@ -1290,7 +1311,6 @@ body::before {
 .tc-status svg { width: 8px; height: 8px; }
 .tc-status.allowed { color: var(--green); }
 .tc-status.denied { color: var(--red); }
-.tc-item.decided .tc-item-name { opacity: .72; }
 
 /* ─── Inline Edit UI ───────────────────────────────────────────────────────── */
 .msg-edit-wrap {

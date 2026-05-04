@@ -3,11 +3,11 @@
 import { api }   from './api.js';
 import { state } from './state.js';
 import {
-  createStreamingMessage, appendMessage, appendToolResult,
-  showToolConfirmation, cancelToolConfirmation, finalizeStreamingMessage, setStreamingMessageLogIndex,
+  createStreamingMessage, appendMessage,
+  cancelAllToolApprovals, finalizeStreamingMessage, setStreamingMessageLogIndex,
   escapeHtml, scrollToBottom, renderAllMessages,
   createThinkingBlock, updateThinkingBlock, finalizeThinkingBlock,
-  showToolUseIndicator, hideToolUseIndicator,
+  createToolStrip, toolStripSetApproval, toolStripSetRunning, toolStripFinalize,
 } from './renderer.js';
 import { applyMarkdown } from './markdown.js';
 import { executeTool, isServerEnabled, isServerAutoApprove } from './mcp.js';
@@ -166,7 +166,7 @@ export async function stopAssistantTurn() {
   if (!state.isStreaming && !state.streamId) return;
 
   turnCancelled = true;
-  cancelToolConfirmation();
+  cancelAllToolApprovals();
   turnAbortController?.abort();
 
   const streamId = state.streamId;
@@ -257,14 +257,14 @@ function processSSEEvent(raw, ctx) {
 
   } else if (evt.type === 'tool_start') {
     ctx.removeCursor();
-    showToolUseIndicator(evt.name);
+    // Create the strip immediately so users see "using <tool> [pulse]" during streaming.
+    // Store by insertion order — tool_calls arrives later with the full ordered call list.
+    ctx.toolStrips.push(createToolStrip(evt.name));
 
   } else if (evt.type === 'tool_calls') {
-    hideToolUseIndicator();
     ctx.toolCalls = evt.calls;
 
   } else if (evt.type === 'error') {
-    hideToolUseIndicator();
     const el = ctx.getContentEl();
     el.classList.remove('cursor-blink');
     el.innerHTML = `<span style="color:var(--red)">Error: ${escapeHtml(evt.message)}</span>`;
@@ -311,6 +311,7 @@ async function runChatLoop() {
     accReasoning:   '',
     reasoningBodyEl: null,
     toolCalls:      null,
+    toolStrips:     [],   // one strip element per tool_start event, in order
     getContentEl:   () => { if (!contentEl) contentEl = createStreamingMessage(); return contentEl; },
     removeCursor:   () => contentEl?.classList.remove('cursor-blink'),
   };
@@ -330,14 +331,13 @@ async function runChatLoop() {
     }, { signal: turnAbortController.signal });
 
     const success = await readSSEStream(resp, ctx);
-    hideToolUseIndicator();
     if (!success || turnCancelled) return;
 
     if (ctx.reasoningBodyEl) finalizeThinkingBlock(ctx.reasoningBodyEl, ctx.accReasoning);
     if (contentEl)           finalizeStreamingMessage(contentEl, ctx.accText);
 
     if (ctx.toolCalls?.length > 0) {
-      await handleToolCalls(ctx.toolCalls, ctx.accText, ctx.accReasoning);
+      await handleToolCalls(ctx.toolCalls, ctx.accText, ctx.accReasoning, ctx.toolStrips);
     } else if (ctx.accText) {
       if (ctx.accReasoning) state.displayLog.push({ type: 'thinking', content: ctx.accReasoning });
       state.messages.push({ role: 'assistant', content: ctx.accText });
@@ -460,28 +460,26 @@ function parseToolArgs(rawArgs) {
   try { return JSON.parse(rawArgs || '{}'); } catch { return {}; }
 }
 
-async function resolveToolDecisions(calls) {
+async function handleToolCalls(calls, precedingText, precedingReasoning = '', toolStrips = []) {
+  if (precedingReasoning) state.displayLog.push({ type: 'thinking', content: precedingReasoning });
+  if (precedingText)      state.displayLog.push({ type: 'message', role: 'assistant', content: precedingText });
+
+  // Ensure every call has a strip — fall back to creating one if tool_start didn't fire for it.
+  const strips = calls.map((call, i) => toolStrips[i] ?? createToolStrip(call.function.name));
+
+  // Determine auto-approval per call.
   const autoApprovedFlags = calls.map(tc => {
     const toolDef = state.mcpTools.find(t => t.name === tc.function.name);
     return !!(toolDef && isServerAutoApprove(toolDef.server));
   });
 
-  if (autoApprovedFlags.every(Boolean)) {
-    return new Array(calls.length).fill(true);
-  }
+  // Launch all approval UIs simultaneously; auto-approved resolve immediately.
+  const decisionPromises = calls.map((call, i) =>
+    autoApprovedFlags[i] ? Promise.resolve(true) : toolStripSetApproval(strips[i], call)
+  );
 
-  const decisions = await showToolConfirmation(calls);
-  if (decisions === null || turnCancelled) return null;
-
-  return decisions.map((d, i) => autoApprovedFlags[i] ? true : d);
-}
-
-async function handleToolCalls(calls, precedingText, precedingReasoning = '') {
-  if (precedingReasoning) state.displayLog.push({ type: 'thinking', content: precedingReasoning });
-  if (precedingText)      state.displayLog.push({ type: 'message', role: 'assistant', content: precedingText });
-
-  const decisions = await resolveToolDecisions(calls);
-  if (decisions === null || turnCancelled) return;
+  const decisions = await Promise.all(decisionPromises);
+  if (turnCancelled) return;
 
   state.messages.push({
     role:       'assistant',
@@ -499,14 +497,15 @@ async function handleToolCalls(calls, precedingText, precedingReasoning = '') {
     const tc   = calls[i];
     const args = parseToolArgs(tc.function.arguments);
     let result;
+
     if (decisions[i]) {
-      showToolUseIndicator(tc.function.name, 'running');
+      toolStripSetRunning(strips[i], args);
       result = await executeTool(tc, { signal: turnAbortController?.signal });
-      hideToolUseIndicator();
     } else {
       result = 'Tool execution denied by user.';
     }
-    appendToolResult(tc.function.name, args, result);
+
+    toolStripFinalize(strips[i], tc.function.name, args, result);
     state.displayLog.push({ type: 'tool_result', name: tc.function.name, args, result });
     state.messages.push({ role: 'tool', tool_call_id: tc.id, content: result });
   }
