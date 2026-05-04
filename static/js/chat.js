@@ -26,8 +26,8 @@ function getImagePreviewBar() { return document.getElementById('image-preview-ba
 function refreshImagePreviewBar() {
   const bar = getImagePreviewBar();
   if (!bar) return;
-  if (!pendingImages.length) { bar.style.display = 'none'; bar.innerHTML = ''; return; }
-  bar.style.display = 'flex';
+  if (!pendingImages.length) { bar.hidden = true; bar.innerHTML = ''; return; }
+  bar.hidden = false;
   bar.innerHTML = '';
   pendingImages.forEach((img, idx) => {
     const wrap = document.createElement('div');
@@ -158,8 +158,8 @@ async function buildApiMessages() {
 
 export function setStreaming(active) {
   state.isStreaming = active;
-  document.getElementById('send-btn').style.display = active ? 'none' : 'grid';
-  document.getElementById('stop-btn').style.display = active ? 'grid' : 'none';
+  document.getElementById('send-btn').hidden = active;
+  document.getElementById('stop-btn').hidden = !active;
 }
 
 export async function stopAssistantTurn() {
@@ -267,7 +267,7 @@ function processSSEEvent(raw, ctx) {
   } else if (evt.type === 'error') {
     const el = ctx.getContentEl();
     el.classList.remove('cursor-blink');
-    el.innerHTML = `<span style="color:var(--red)">Error: ${escapeHtml(evt.message)}</span>`;
+    el.innerHTML = `<span class="inline-error">Error: ${escapeHtml(evt.message)}</span>`;
     return false; // signal abort
   }
 
@@ -349,7 +349,7 @@ async function runChatLoop() {
 
     const el = ctx.getContentEl();
     el.classList.remove('cursor-blink');
-    el.innerHTML = `<span style="color:var(--red)">Network error: ${escapeHtml(err.message)}</span>`;
+    el.innerHTML = `<span class="inline-error">Network error: ${escapeHtml(err.message)}</span>`;
   }
 }
 

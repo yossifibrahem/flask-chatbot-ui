@@ -15,7 +15,7 @@ export async function loadConversationList() {
   container.innerHTML = '';
 
   if (!list.length) {
-    container.innerHTML = '<div class="conv-section-label" style="text-align:center;padding:20px 8px">No conversations yet</div>';
+    container.innerHTML = '<div class="conv-section-label conv-empty">No conversations yet</div>';
     return;
   }
 
