@@ -57,7 +57,6 @@ svg { flex-shrink: 0; }
 [hidden] { display: none !important; }
 
 @keyframes fadeUp { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
-@keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
 @keyframes thinkPulse { 0%, 100% { opacity: .3; transform: scale(.85); } 50% { opacity: 1; transform: scale(1.1); } }
 
 /* ─── Shared UI primitives ────────────────────────────────────────────────── */
@@ -415,7 +414,7 @@ svg { flex-shrink: 0; }
 .msg-content pre:hover .code-copy { opacity: 1; }
 .code-copy:hover { color: var(--text); background: var(--surface2); }
 .inline-error { color: var(--red); }
-.cursor-blink::after { content: '▋'; margin-left: 2px; color: var(--accent); animation: blink .9s step-end infinite; }
+
 
 .msg-images, .msg-edit-images, #image-preview-bar { display: flex; flex-wrap: wrap; gap: 8px; }
 .msg-images { margin-top: 8px; }

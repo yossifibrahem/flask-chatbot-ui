@@ -260,12 +260,10 @@ function processSSEEvent(raw, ctx) {
     }
     ctx.accText += evt.content;
     const el = ctx.getContentEl();
-    el.classList.add('cursor-blink');
     applyMarkdown(el, ctx.accText);
     scrollToBottom();
 
   } else if (evt.type === 'tool_start') {
-    ctx.removeCursor();
     // Create the strip immediately so users see "using <tool> [pulse]" during streaming.
     // Store by insertion order — tool_calls arrives later with the full ordered call list.
     ctx.toolStrips.push(createToolStrip(evt.name));
@@ -275,7 +273,6 @@ function processSSEEvent(raw, ctx) {
 
   } else if (evt.type === 'error') {
     const el = ctx.getContentEl();
-    el.classList.remove('cursor-blink');
     el.innerHTML = `<span class="inline-error">Error: ${escapeHtml(evt.message)}</span>`;
     return false; // signal abort
   }
@@ -335,7 +332,6 @@ async function runChatLoop() {
     toolCalls:      null,
     toolStrips:     [],   // one strip element per tool_start event, in order
     getContentEl:   () => { if (!contentEl) contentEl = createStreamingMessage(); return contentEl; },
-    removeCursor:   () => contentEl?.classList.remove('cursor-blink'),
   };
 
   state.streamId = crypto.randomUUID();
@@ -372,7 +368,6 @@ async function runChatLoop() {
     if (turnCancelled || err.name === 'AbortError') return;
 
     const el = ctx.getContentEl();
-    el.classList.remove('cursor-blink');
     el.innerHTML = `<span class="inline-error">Network error: ${escapeHtml(err.message)}</span>`;
   }
 }

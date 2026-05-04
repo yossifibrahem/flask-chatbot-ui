@@ -467,7 +467,7 @@ export function appendMessage(role, content, logIndex = -1) {
 
 export function createStreamingMessage() {
   const row = prepareAssistantRow();
-  const contentEl = createElement('div', { className: 'msg-content cursor-blink', html: '&nbsp;' });
+  const contentEl = createElement('div', { className: 'msg-content', html: '&nbsp;' });
   row.appendChild(contentEl);
   scrollToBottom();
   return contentEl;
@@ -482,7 +482,6 @@ export function finalizeStreamingMessage(contentEl, text) {
     return;
   }
 
-  contentEl.classList.remove('cursor-blink');
   applyMarkdown(contentEl, text);
 
   const row = contentEl.parentElement;
