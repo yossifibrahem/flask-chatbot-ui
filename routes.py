@@ -148,7 +148,8 @@ def generate_title():
                     "role": "system",
                     "content": (
                         "Generate a short, concise title (4–6 words) for this conversation. "
-                        "Reply with ONLY the title — no quotes, no punctuation at the end."
+                        "Reply with ONLY the title — no quotes, no punctuation at the end. "
+                        "write the title like this: 'title: title here'"
                     ),
                 },
                 *messages[:4],
@@ -156,7 +157,7 @@ def generate_title():
             max_tokens=512,
             temperature=0.7,
         )
-        title = response.choices[0].message.content.strip().strip("\"'")
+        title = response.choices[0].message.content.strip().strip("\"'").removeprefix("title:").strip()
         return jsonify({"title": title})
     except Exception as exc:
         return jsonify({"error": str(exc)}), 400
