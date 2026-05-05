@@ -293,7 +293,7 @@ svg { flex-shrink: 0; }
 .conv-del:hover { color: var(--red); }
 .conv-del svg { width: 11px; height: 11px; }
 
-#sidebar-footer { padding: 10px 8px; display: flex; flex-direction: column; gap: 2px; }
+#sidebar-footer { padding: 4px 8px; display: flex; flex-direction: column; gap: 2px; }
 .sidebar-action {
   gap: 9px;
   width: 100%;
