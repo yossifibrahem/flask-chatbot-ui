@@ -16,6 +16,8 @@ import mcp_service
 import store
 import streaming as stream_module
 
+import re
+
 blueprint = Blueprint("main", __name__)
 
 # Maps stream_id → threading.Event so POST /api/chat/cancel can stop generation.
@@ -140,6 +142,20 @@ def generate_title():
     body = _body()
     client = _openai_client(body)
     messages = body.get("messages", [])
+    parsed_messages = ""
+    for msg in messages:
+        role = msg.get("role", "")
+        if role not in {"user", "assistant"}:
+            continue
+        content = msg.get("content", "")
+        ## remove /n/n from content
+        content = content.replace("\n\n", "").strip()
+        if content == "":
+            continue
+        if role and content:
+            parsed_messages += f"{role}: {content}\n"
+        
+    
     try:
         response = client.chat.completions.create(
             model=body.get("model", "gpt-4o"),
@@ -149,15 +165,20 @@ def generate_title():
                     "content": (
                         "Generate a short, concise title (4–6 words) for this conversation. "
                         "Reply with ONLY the title — no quotes, no punctuation at the end. "
-                        "write the title like this: 'title: title here'"
+                        "Don't overthink it; just give me a quick label that captures the main topic. "
+                        "Write the title like this: {Title Here}"
                     ),
                 },
-                *messages[:4],
+                {"role": "user", "content": parsed_messages.strip()},
             ],
             max_tokens=512,
             temperature=0.7,
         )
-        title = response.choices[0].message.content.strip().strip("\"'").removeprefix("title:").strip()
+        title = response.choices[0].message.content.strip()
+        # Extract title from the model's response using regex
+        match = re.search(r"\{(.+?)\}", title)
+        if match:
+            title = match.group(1)
         return jsonify({"title": title})
     except Exception as exc:
         return jsonify({"error": str(exc)}), 400

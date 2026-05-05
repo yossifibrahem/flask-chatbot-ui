@@ -682,6 +682,8 @@ svg { flex-shrink: 0; }
 .field textarea { min-height: 90px; resize: vertical; }
 .field-note { margin-top: 5px; color: var(--text3); font-size: .63rem; line-height: 1.5; font-family: var(--font-mono); }
 .textarea-tall { min-height: 110px; }
+/* Make the system prompt textarea taller for easier editing */
+#system-prompt { min-height: 180px; }
 .btn-row { gap: 8px; margin-bottom: 4px; display: flex; align-items: center; }
 .btn-primary, .btn-secondary { padding: 9px 18px; border: none; border-radius: 8px; font-size: .73rem; font-weight: 500; letter-spacing: .3px; }
 .btn-primary { background: var(--accent); color: var(--bg); }
