@@ -217,7 +217,7 @@ def generate_title():
             ],
             tools=[_SET_TITLE_TOOL],
             tool_choice="required",
-            max_tokens=256,
+            max_tokens=512,
             temperature=0.7,
         )
         return jsonify({"title": _extract_title(response.choices[0].message)})
