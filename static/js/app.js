@@ -11,6 +11,7 @@ import { loadSettings, saveSettings, fetchModels }                           fro
 import { loadConversationList, openConversation, createNewConversation, persistConversation, startNewChat } from './conversations.js';
 import { loadMcpConfig, saveMcpConfig, reloadTools, loadCachedTools } from './mcp.js';
 import { sendMessage, stopAssistantTurn, editAndResend, regenerateFrom, initImageAttachments } from './chat.js';
+import { initVoiceInput } from './voice.js';
 import { clearMessages } from './renderer.js';
 import { ICONS, initIcons } from './icons.js';
 import { loadCustomization, saveCustomization, resetCustomization, initSwatchPicker, syncCustomizationUI } from './customization.js';
@@ -105,6 +106,7 @@ function bindInputEvents() {
   document.getElementById('stop-btn').addEventListener('click', stopAssistantTurn);
 
   initImageAttachments();
+  initVoiceInput();
 
   // Chat title persistence
   const titleInput = document.getElementById('chat-title-input');

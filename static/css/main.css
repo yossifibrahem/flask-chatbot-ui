@@ -87,17 +87,17 @@ svg { flex-shrink: 0; }
 .tr-result::-webkit-scrollbar-thumb,
 .modal-body::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 999px; }
 
-:is(#btn-toggle-sidebar, .modal-close, .conv-del, #attach-btn, #send-btn, #stop-btn, .msg-action-btn, .tc-allow, .tc-deny, .btn-primary, .btn-secondary, .modal-tab, .sidebar-action, #btn-new-chat, #model-badge, .mp-chip, .model-chip) {
+:is(#btn-toggle-sidebar, .modal-close, .conv-del, #attach-btn, #mic-btn, #send-btn, #stop-btn, .msg-action-btn, .tc-allow, .tc-deny, .btn-primary, .btn-secondary, .modal-tab, .sidebar-action, #btn-new-chat, #model-badge, .mp-chip, .model-chip) {
   transition: color var(--fast), background var(--fast), border-color var(--fast), opacity var(--fast), transform var(--fast), box-shadow var(--fast);
 }
 
-:is(#btn-toggle-sidebar, .modal-close, .conv-del, #attach-btn, #send-btn, #stop-btn) {
+:is(#btn-toggle-sidebar, .modal-close, .conv-del, #attach-btn, #mic-btn, #send-btn, #stop-btn) {
   display: grid;
   place-items: center;
   border: none;
 }
 
-:is(#btn-toggle-sidebar, .modal-close, .conv-del, #attach-btn, .msg-action-btn, .tc-allow, .tc-deny, .modal-tab) {
+:is(#btn-toggle-sidebar, .modal-close, .conv-del, #attach-btn, #mic-btn, .msg-action-btn, .tc-allow, .tc-deny, .modal-tab) {
   background: none;
 }
 
@@ -444,6 +444,30 @@ svg { flex-shrink: 0; }
 }
 #attach-btn:hover { color: var(--text); background: var(--surface3); }
 #attach-btn svg { width: 15px; height: 15px; }
+
+#mic-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  color: var(--text3);
+  display: grid;
+  place-items: center;
+  border: none;
+  background: none;
+  transition: color var(--fast), background var(--fast);
+}
+#mic-btn:hover { color: var(--text); background: var(--surface3); }
+#mic-btn svg { width: 15px; height: 15px; }
+#mic-btn.recording {
+  color: var(--accent);
+  background: var(--accent-dim);
+  animation: micPulse 1.4s ease-in-out infinite;
+}
+#mic-btn.unsupported { opacity: .3; cursor: not-allowed; }
+@keyframes micPulse {
+  0%, 100% { box-shadow: 0 0 0 0 var(--accent-dim); }
+  50%       { box-shadow: 0 0 0 5px transparent; }
+}
 
 /* ─── Model picker (now in toolbar) ──────────────────────────────────────── */
 #model-picker-wrap { position: relative; }
