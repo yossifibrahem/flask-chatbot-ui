@@ -441,12 +441,8 @@ function getRawText(content) {
   return content.map(part => part.text || '').join('\n');
 }
 
-function isBlankAssistantMessage(role, content) {
-  return role === 'assistant' && typeof content === 'string' && content.trim() === '';
-}
-
 export function appendMessage(role, content, logIndex = -1) {
-  if (!content || isBlankAssistantMessage(role, content)) return null;
+  if (!content) return null;
 
   const isUser = role === 'user';
   const row = isUser
@@ -570,7 +566,13 @@ function appendToolResultInline(toolName, args, result) {
 export function renderAllMessages(displayLog) {
   messagesEl().innerHTML = '';
   displayLog.forEach((entry, idx) => {
-    if (entry.type === 'message') appendMessage(entry.role, entry.content, idx);
+    if (entry.type === 'message') {
+    // Skip whitespace-only assistant messages on history replay —
+    // they are tool-only turn artifacts that break block grouping.
+    // (Streaming already removes them via finalizeStreamingMessage.)
+      if (entry.role === 'assistant' && !String(entry.content ?? '').trim()) return;
+      appendMessage(entry.role, entry.content, idx);
+    }
     if (entry.type === 'tool_result') appendToolResultInline(entry.name, entry.args, entry.result);
     if (entry.type === 'thinking') appendThinkingBlock(entry.content);
   });
