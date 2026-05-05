@@ -12,6 +12,14 @@ const EMPTY_STATE_PROMPTS = [
   { tag: 'WRITE',   label: 'Executive summary for a product launch',          prompt: 'Help me write a concise executive summary for a product launch' },
 ];
 
+const SUGGESTION_CHIPS = [
+  { icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>`, label: 'Code', prompt: 'Help me write some code' },
+  { icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>`, label: 'Write', prompt: 'Help me write something' },
+  { icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>`, label: 'Explain', prompt: 'Explain a concept to me' },
+  { icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>`, label: 'Analyze', prompt: 'Analyze this for me' },
+  { icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>`, label: 'Brainstorm', prompt: 'Help me brainstorm ideas about' },
+];
+
 const BOTTOM_THRESHOLD = 32;
 let stickToBottom = true;
 // Canceller functions for any strips currently awaiting user approval
@@ -48,21 +56,40 @@ export function scrollToBottom(force = false) {
 }
 
 export function clearMessages() {
-  const promptsHtml = EMPTY_STATE_PROMPTS.map(prompt => `
-    <div class="es-prompt" data-prompt="${escapeHtml(prompt.prompt)}">
-      <strong>${prompt.tag}</strong>${escapeHtml(prompt.label)}
-    </div>`).join('');
-
   messagesEl().innerHTML = `
     <div id="empty-state">
       <div class="es-logo">Lu<em>men</em></div>
       <div class="es-sub">Your AI assistant — ready to help</div>
-      <div class="es-prompts">${promptsHtml}</div>
     </div>`;
+
+  // Switch input dock to centered mode
+  document.getElementById('main')?.classList.add('is-empty');
+
+  // Populate suggestion chips below the dock
+  const suggestionsBar = document.getElementById('suggestions-bar');
+  if (suggestionsBar) {
+    suggestionsBar.innerHTML = SUGGESTION_CHIPS.map(chip => `
+      <button class="suggestion-chip" data-prompt="${escapeHtml(chip.prompt)}">
+        ${chip.icon}${escapeHtml(chip.label)}
+      </button>`).join('');
+
+    suggestionsBar.querySelectorAll('.suggestion-chip').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const input = document.getElementById('user-input');
+        if (input) {
+          input.value = btn.dataset.prompt;
+          input.focus();
+          input.dispatchEvent(new Event('input'));
+        }
+      });
+    });
+  }
 }
 
 function createMessageRow({ avatarClass, avatarIcon, roleLabel, isUser = false }) {
   remove('#empty-state');
+  // Exit centered mode when conversation starts
+  document.getElementById('main')?.classList.remove('is-empty');
 
   const row = createElement('div', { className: `msg-row${isUser ? ' user-row' : ''}` });
   row.innerHTML = `
@@ -565,6 +592,13 @@ function appendToolResultInline(toolName, args, result) {
 
 export function renderAllMessages(displayLog) {
   messagesEl().innerHTML = '';
+  // Exit centered empty state since we are loading an existing conversation
+  if (displayLog.length > 0) {
+    document.getElementById('main')?.classList.remove('is-empty');
+  } else {
+    clearMessages();
+    return;
+  }
   displayLog.forEach((entry, idx) => {
     if (entry.type === 'message') {
       // Skip whitespace-only assistant messages on history replay —

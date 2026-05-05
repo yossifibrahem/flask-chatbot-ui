@@ -23,7 +23,7 @@
 </head>
 <body>
 
-<!-- ── Sidebar ── -->
+<!-- Sidebar -->
 <aside id="sidebar">
   <div id="sidebar-header">
     <div class="logo">
@@ -58,8 +58,8 @@
   </div>
 </aside>
 
-<!-- ── Main ── -->
-<main id="main">
+<!-- Main -->
+<main id="main" class="is-empty">
   <div id="chat-header">
     <button id="btn-toggle-sidebar" title="Toggle sidebar">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -71,57 +71,71 @@
 
     <input id="chat-title-input" type="text" placeholder="Untitled Conversation" maxlength="80" />
 
-    <div class="header-actions">
-      <div id="model-picker-wrap">
-        <button id="model-badge" title="Click to change model">
-          <span id="model-badge-label">No model</span>
-          <svg id="model-badge-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-            <polyline points="6 9 12 15 18 9"/>
-          </svg>
-        </button>
-        <div id="model-popover">
-          <div class="mp-header">Select model</div>
-          <div id="mp-model-list"><span class="mp-empty">No models — fetch them in Settings</span></div>
-        </div>
-      </div>
-    </div>
+    <div class="header-actions"></div>
   </div>
 
   <div id="messages"></div>
 
+  <!-- Floating Input Dock -->
   <div id="input-area">
     <div id="image-preview-bar" hidden></div>
-    <div class="input-wrap">
-      <button id="attach-btn" title="Attach images">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/>
-        </svg>
-      </button>
-      <input type="file" id="image-input" accept="image/*" multiple hidden />
+
+    <div class="input-dock">
       <textarea id="user-input" rows="1" placeholder="Ask anything…"></textarea>
-      <button id="send-btn" title="Send (Enter)">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-          <line x1="22" y1="2" x2="11" y2="13"/>
-          <polygon points="22 2 15 22 11 13 2 9 22 2"/>
-        </svg>
-      </button>
-      <button id="stop-btn" title="Stop generation" hidden>
-        <svg viewBox="0 0 24 24" fill="currentColor">
-          <rect x="6" y="6" width="12" height="12" rx="2"/>
-        </svg>
-      </button>
+
+      <div class="input-toolbar">
+        <div class="toolbar-left">
+          <button id="attach-btn" title="Attach images">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/>
+            </svg>
+          </button>
+          <input type="file" id="image-input" accept="image/*" multiple hidden />
+
+          <div id="model-picker-wrap">
+            <button id="model-badge" title="Click to change model">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="model-icon">
+                <circle cx="12" cy="12" r="3"/>
+                <path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/>
+              </svg>
+              <span id="model-badge-label">No model</span>
+              <svg id="model-badge-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="6 9 12 15 18 9"/>
+              </svg>
+            </button>
+            <div id="model-popover">
+              <div class="mp-header">Select model</div>
+              <div id="mp-model-list"><span class="mp-empty">No models — fetch them in Settings</span></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="toolbar-right">
+          <span class="char-count" id="char-count"></span>
+          <span class="input-hint">⏎ send · ⇧⏎ newline</span>
+          <button id="send-btn" title="Send (Enter)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="22" y1="2" x2="11" y2="13"/>
+              <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+            </svg>
+          </button>
+          <button id="stop-btn" title="Stop generation" hidden>
+            <svg viewBox="0 0 24 24" fill="currentColor">
+              <rect x="6" y="6" width="12" height="12" rx="2"/>
+            </svg>
+          </button>
+        </div>
+      </div>
     </div>
-    <div class="input-footer">
-      <span class="input-hint">Enter to send · Shift+Enter for newline · Paste images</span>
-      <span class="char-count" id="char-count"></span>
-    </div>
+
+    <!-- Suggestion chips shown in new-conversation state -->
+    <div id="suggestions-bar"></div>
   </div>
 </main>
 
-<!-- ── Settings Modal ── -->
+<!-- Settings Modal -->
 <div class="modal-overlay" id="settings-modal">
   <div class="modal">
-
     <div class="modal-header">
       <nav class="modal-tabs">
         <button class="modal-tab active" data-tab="tab-settings">Settings</button>
@@ -136,8 +150,6 @@
     </div>
 
     <div class="modal-body">
-
-      <!-- Settings tab -->
       <div id="tab-settings" class="tab-panel active">
         <div class="section-title">API Configuration</div>
         <div class="field">
@@ -162,7 +174,6 @@
         </div>
       </div>
 
-      <!-- MCP tab -->
       <div id="tab-mcp" class="tab-panel">
         <div class="section-title">Server Configuration</div>
         <div class="field">
@@ -179,7 +190,6 @@
           <div class="no-tools-label">No tools loaded — click Reload Tools</div>
         </div>
       </div>
-
     </div>
 
     <div class="modal-footer">
@@ -187,14 +197,12 @@
       <button class="btn-primary tab-footer-btn" data-for-tab="tab-settings" id="btn-save-settings">Save Settings</button>
       <button class="btn-primary tab-footer-btn" data-for-tab="tab-mcp"      id="btn-save-mcp">Save Config</button>
     </div>
-
   </div>
 </div>
 
-<!-- ── Toast ── -->
+<!-- Toast -->
 <div id="toast"></div>
 
-<!-- App — loaded as an ES module so import/export works in all modules -->
 <script type="module" src="{{ url_for('static', filename='js/app.js') }}"></script>
 </body>
 </html>
