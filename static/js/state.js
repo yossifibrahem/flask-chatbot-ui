@@ -10,9 +10,9 @@ export const CUSTOMIZATION_DEFAULTS = {
   sidebarDefaultOpen:    true,
   showSuggestionChips:   true,
   showTimestamps:        true,
+  blocksDefaultExpanded: false,
   fontSize:              'medium',   // 'small' | 'medium' | 'large'
   accentColor:           '#c9a96e',  // original gold
-  charWarnThreshold:     3000,
 };
 
 export const STORAGE_KEYS = {

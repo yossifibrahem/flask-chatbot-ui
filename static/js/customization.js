@@ -28,9 +28,11 @@ function _applyAccent(hex) {
   if (!rgb) return;
   document.documentElement.style.setProperty('--accent',            hex);
   document.documentElement.style.setProperty('--accent-dim',        `rgba(${rgb},0.12)`);
+  document.documentElement.style.setProperty('--accent-hover',      `rgba(${rgb},0.20)`);
   document.documentElement.style.setProperty('--accent-glow',       `rgba(${rgb},0.06)`);
   document.documentElement.style.setProperty('--accent-border',     `rgba(${rgb},0.4)`);
   document.documentElement.style.setProperty('--accent-border-dim', `rgba(${rgb},0.25)`);
+  document.documentElement.style.setProperty('--accent-border-mid', `rgba(${rgb},0.50)`);
 }
 
 // ── Load ──────────────────────────────────────────────────────────────────────
@@ -51,12 +53,12 @@ export function saveCustomization() {
 
   // Persist
   storage.set(STORAGE_KEYS.customization, {
-    sidebarDefaultOpen:  state.sidebarDefaultOpen,
-    showSuggestionChips: state.showSuggestionChips,
-    showTimestamps:      state.showTimestamps,
-    fontSize:            state.fontSize,
-    accentColor:         state.accentColor,
-    charWarnThreshold:   state.charWarnThreshold,
+    sidebarDefaultOpen:    state.sidebarDefaultOpen,
+    showSuggestionChips:   state.showSuggestionChips,
+    showTimestamps:        state.showTimestamps,
+    blocksDefaultExpanded: state.blocksDefaultExpanded,
+    fontSize:              state.fontSize,
+    accentColor:           state.accentColor,
   });
 
   applyCustomization();
@@ -73,56 +75,39 @@ export function resetCustomization() {
   showToast('Customization reset to defaults');
 }
 
-// ── Init live listeners ───────────────────────────────────────────────────────
-// Every control immediately updates state + applies to DOM so changes are
-// visible before the user clicks Save. Save only persists to localStorage.
+// ── Init listeners ────────────────────────────────────────────────────────────
+// Controls only update UI state (active swatch highlight, etc.).
+// applyCustomization() is called exclusively by saveCustomization().
 
 export function initSwatchPicker() {
-  // Toggles — update state + apply immediately on change
-  _liveToggle('cust-sidebar-open',    v => { state.sidebarDefaultOpen  = v; });
-  _liveToggle('cust-suggestion-chips',v => { state.showSuggestionChips = v; applyCustomization(); });
-  _liveToggle('cust-timestamps',      v => { state.showTimestamps       = v; applyCustomization(); });
+  // Toggles — no state mutation, no apply; DOM input.checked holds the draft value
+  _liveToggle('cust-sidebar-open',    () => {});
+  _liveToggle('cust-suggestion-chips',() => {});
+  _liveToggle('cust-timestamps',      () => {});
+  _liveToggle('cust-blocks-expanded', () => {});
 
-  // Font size select — apply immediately
-  const fsEl = document.getElementById('cust-font-size');
-  if (fsEl) {
-    fsEl.addEventListener('change', () => {
-      state.fontSize = fsEl.value;
-      applyCustomization();
-    });
-  }
+  // Font size select and char warn — no listeners needed;
+  // _readControlsIntoState reads DOM values directly on Save.
 
-  // Char warn threshold — update state immediately (no visual effect until next keystroke)
-  const warnEl = document.getElementById('cust-char-warn');
-  if (warnEl) {
-    warnEl.addEventListener('input', () => {
-      state.charWarnThreshold = parseInt(warnEl.value, 10) || 3000;
-    });
-  }
-
-  // Colour swatches — live preview + state update
+  // Colour swatches — only update active highlight; no state mutation
   document.querySelectorAll('.cust-swatch').forEach(sw => {
     sw.addEventListener('click', () => {
       document.querySelectorAll('.cust-swatch').forEach(s => s.classList.remove('active'));
       sw.classList.add('active');
-      state.accentColor = sw.dataset.color;
-      _applyAccent(sw.dataset.color);
     });
   });
 }
 
-// ── Sync UI controls → current state (called on load and reset) ───────────────
+// ── Sync UI controls → current state (called on load, reset, and modal close) ──
 
-function syncCustomizationUI() {
+export function syncCustomizationUI() {
   _setCheckbox('cust-sidebar-open',    state.sidebarDefaultOpen);
   _setCheckbox('cust-suggestion-chips',state.showSuggestionChips);
   _setCheckbox('cust-timestamps',      state.showTimestamps);
+  _setCheckbox('cust-blocks-expanded', state.blocksDefaultExpanded);
 
   const fs = document.getElementById('cust-font-size');
   if (fs) fs.value = state.fontSize;
-
-  const warn = document.getElementById('cust-char-warn');
-  if (warn) warn.value = state.charWarnThreshold;
 
   document.querySelectorAll('.cust-swatch').forEach(sw => {
     sw.classList.toggle('active', sw.dataset.color === state.accentColor);
@@ -132,11 +117,11 @@ function syncCustomizationUI() {
 // ── Read DOM controls → state (used by saveCustomization) ────────────────────
 
 function _readControlsIntoState() {
-  state.sidebarDefaultOpen  = document.getElementById('cust-sidebar-open')?.checked  ?? state.sidebarDefaultOpen;
-  state.showSuggestionChips = document.getElementById('cust-suggestion-chips')?.checked ?? state.showSuggestionChips;
-  state.showTimestamps      = document.getElementById('cust-timestamps')?.checked    ?? state.showTimestamps;
-  state.fontSize            = document.getElementById('cust-font-size')?.value       ?? state.fontSize;
-  state.charWarnThreshold   = parseInt(document.getElementById('cust-char-warn')?.value, 10) || state.charWarnThreshold;
+  state.sidebarDefaultOpen    = document.getElementById('cust-sidebar-open')?.checked    ?? state.sidebarDefaultOpen;
+  state.showSuggestionChips   = document.getElementById('cust-suggestion-chips')?.checked ?? state.showSuggestionChips;
+  state.showTimestamps        = document.getElementById('cust-timestamps')?.checked       ?? state.showTimestamps;
+  state.blocksDefaultExpanded = document.getElementById('cust-blocks-expanded')?.checked  ?? state.blocksDefaultExpanded;
+  state.fontSize              = document.getElementById('cust-font-size')?.value          ?? state.fontSize;
 
   const activeSwatch = document.querySelector('.cust-swatch.active');
   if (activeSwatch) state.accentColor = activeSwatch.dataset.color;

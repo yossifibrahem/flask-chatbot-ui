@@ -10,9 +10,11 @@
   --border2: #3a3c37;
   --accent: #c9a96e;
   --accent-dim: rgba(201,169,110,.12);
+  --accent-hover: rgba(201,169,110,.20);
   --accent-glow: rgba(201,169,110,.06);
   --accent-border: rgba(201,169,110,.4);
   --accent-border-dim: rgba(201,169,110,.25);
+  --accent-border-mid: rgba(201,169,110,.50);
   --green: #6db87a;
   --red: #e07070;
   --blue: #6fa3c9;
@@ -211,7 +213,7 @@ svg { flex-shrink: 0; }
   font-weight: 500;
   letter-spacing: .3px;
 }
-#btn-new-chat:hover { background: rgba(201,169,110,.2); border-color: var(--accent-border); }
+#btn-new-chat:hover { background: var(--accent-hover); border-color: var(--accent-border); }
 #btn-new-chat svg { width: 13px; height: 13px; }
 
 #conv-list { flex: 1; overflow-y: auto; padding: 10px 8px; }
@@ -494,7 +496,7 @@ svg { flex-shrink: 0; }
 .mp-chip, .model-chip { color: var(--text2); cursor: pointer; }
 .mp-chip { padding: 7px 10px; border: 1px solid transparent; border-radius: 7px; font-size: .73rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .mp-chip:hover { background: var(--surface2); color: var(--text); }
-:is(.mp-chip, .model-chip).selected { background: var(--accent-dim); color: var(--accent); border-color: rgba(201,169,110,.5); }
+:is(.mp-chip, .model-chip).selected { background: var(--accent-dim); color: var(--accent); border-color: var(--accent-border-mid); }
 .mp-empty { display: block; padding: 10px; color: var(--text3); font-size: .7rem; text-align: center; }
 
 /* ─── Send / stop buttons ─────────────────────────────────────────────────── */
@@ -526,7 +528,6 @@ svg { flex-shrink: 0; }
   font-family: var(--font-mono);
   font-size: .62rem;
 }
-.char-count.warn { color: var(--accent); }
 
 /* ─── Suggestions bar ─────────────────────────────────────────────────────── */
 #suggestions-bar {
@@ -911,4 +912,3 @@ html.hide-suggestion-chips #suggestions-bar { display: none !important; }
 }
 
 .field select:focus { border-color: var(--accent-border); outline: none; }
-

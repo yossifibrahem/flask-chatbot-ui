@@ -13,7 +13,7 @@ import { loadMcpConfig, saveMcpConfig, reloadTools, loadCachedTools } from './mc
 import { sendMessage, stopAssistantTurn, editAndResend, regenerateFrom, initImageAttachments } from './chat.js';
 import { clearMessages } from './renderer.js';
 import { ICONS, initIcons } from './icons.js';
-import { loadCustomization, saveCustomization, resetCustomization, initSwatchPicker } from './customization.js';
+import { loadCustomization, saveCustomization, resetCustomization, initSwatchPicker, syncCustomizationUI } from './customization.js';
 
 // ── Event binding ─────────────────────────────────────────────────────────────
 
@@ -46,10 +46,18 @@ function bindModalEvents() {
   document.getElementById('btn-open-settings').addEventListener('click', () => openModal('settings-modal'));
 
   document.querySelectorAll('[data-close]').forEach(btn =>
-    btn.addEventListener('click', () => closeModal(btn.dataset.close))
+    btn.addEventListener('click', () => {
+      closeModal(btn.dataset.close);
+      if (btn.dataset.close === 'settings-modal') syncCustomizationUI();
+    })
   );
   document.querySelectorAll('.modal-overlay').forEach(overlay =>
-    overlay.addEventListener('click', e => { if (e.target === overlay) closeModal(overlay.id); })
+    overlay.addEventListener('click', e => {
+      if (e.target === overlay) {
+        closeModal(overlay.id);
+        if (overlay.id === 'settings-modal') syncCustomizationUI();
+      }
+    })
   );
 
   // Tab switching
@@ -127,7 +135,11 @@ function bindInputEvents() {
 function bindKeyboardEvents() {
   document.addEventListener('keydown', e => {
     if (e.key === 'Escape') {
-      document.querySelectorAll('.modal-overlay.open').forEach(m => m.classList.remove('open'));
+      const openModals = document.querySelectorAll('.modal-overlay.open');
+      openModals.forEach(m => {
+        m.classList.remove('open');
+        if (m.id === 'settings-modal') syncCustomizationUI();
+      });
     }
     if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
       e.preventDefault();

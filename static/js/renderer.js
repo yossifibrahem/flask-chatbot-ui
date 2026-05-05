@@ -4,6 +4,7 @@
 import { applyMarkdown } from './markdown.js';
 import { $, createElement, remove, setVisible } from './dom.js';
 import { ICONS } from './icons.js';
+import { state } from './state.js';
 
 const SUGGESTION_CHIPS = [
   { icon: ICONS.chipCode,       label: 'Code',       prompt: 'Help me write some code' },
@@ -257,17 +258,18 @@ function makeGroupSummary(elements) {
 function createGroupBlock(elements) {
   const count = elements.length;
   const summary = makeGroupSummary(elements);
+  const expanded = state.blocksDefaultExpanded;
 
-  const group = createElement('div', { className: 'block-group' });
+  const group = createElement('div', { className: `block-group${expanded ? ' open' : ''}` });
   group.innerHTML = `
     <button class="group-header">
-      <span class="group-chevron">${ICONS.chevronRight}</span>
+      <span class="group-chevron">${expanded ? ICONS.chevronDown : ICONS.chevronRight}</span>
       <span class="group-icon">${ICONS.layers}</span>
       <span class="group-label">${count} step${count > 1 ? 's' : ''}</span>
       <span class="group-sep">·</span>
       <span class="group-desc">${escapeHtml(summary)}</span>
     </button>
-    <div class="group-body" style="display:none"></div>`;
+    <div class="group-body" style="${expanded ? '' : 'display:none'}"></div>`;
 
   const header  = group.querySelector('.group-header');
   const body    = group.querySelector('.group-body');
@@ -350,15 +352,21 @@ function createThinkingMarkup({ label, chevron, body = '', streaming = false, di
 }
 
 export function createThinkingBlock() {
+  const expanded = state.blocksDefaultExpanded;
   const row = prepareAssistantRow();
   const block = createElement('div', {
-    className: 'thinking-block thinking-streaming open',
-    html: createThinkingMarkup({ label: 'Thinking…', chevron: ICONS.chevronDown, streaming: true, display: 'block' }),
+    className: `thinking-block thinking-streaming${expanded ? ' open' : ''}`,
+    html: createThinkingMarkup({
+      label:     'Thinking…',
+      chevron:   expanded ? ICONS.chevronDown : ICONS.chevronRight,
+      streaming: true,
+      display:   expanded ? 'block' : 'none',
+    }),
   });
 
   attachCollapsible(block, {
-    headerSelector: '.thinking-header',
-    bodySelector: '.thinking-body',
+    headerSelector:  '.thinking-header',
+    bodySelector:    '.thinking-body',
     chevronSelector: '.thinking-chevron',
     markManualToggle: true,
   });
@@ -382,6 +390,8 @@ export function finalizeThinkingBlock(bodyEl, fullText) {
   block.querySelector('.thinking-pulse')?.remove();
   bodyEl.textContent = fullText;
 
+  // Always collapse after streaming unless the user manually toggled it during streaming.
+  // blocksDefaultExpanded only controls static/history blocks, not live stream finalization.
   if (!block.dataset.manualToggle) {
     block.classList.remove('open');
     block.querySelector('.thinking-chevron').innerHTML = ICONS.chevronRight;
@@ -395,19 +405,21 @@ export function finalizeThinkingBlock(bodyEl, fullText) {
 export function appendThinkingBlock(reasoningText) {
   if (!reasoningText) return;
 
+  const expanded = state.blocksDefaultExpanded;
   const row = prepareAssistantRow();
   const block = createElement('div', {
-    className: 'thinking-block',
+    className: `thinking-block${expanded ? ' open' : ''}`,
     html: createThinkingMarkup({
-      label: 'Thought process',
-      chevron: ICONS.chevronRight,
-      body: escapeHtml(reasoningText),
+      label:   'Thought process',
+      chevron: expanded ? ICONS.chevronDown : ICONS.chevronRight,
+      body:    escapeHtml(reasoningText),
+      display: expanded ? 'block' : 'none',
     }),
   });
 
   attachCollapsible(block, {
-    headerSelector: '.thinking-header',
-    bodySelector: '.thinking-body',
+    headerSelector:  '.thinking-header',
+    bodySelector:    '.thinking-body',
     chevronSelector: '.thinking-chevron',
   });
 
@@ -563,18 +575,19 @@ function createToolResultBody(args, result) {
 
 // appendToolResult is used by renderAllMessages for history replay
 function appendToolResultInline(toolName, args, result) {
+  const expanded = state.blocksDefaultExpanded;
   const row = prepareAssistantRow();
-  const strip = createElement('div', { className: 'tool-strip tool-strip-result tool-inline' });
+  const strip = createElement('div', { className: `tool-strip tool-strip-result tool-inline${expanded ? ' open' : ''}` });
   strip.innerHTML = `
     <button class="tr-summary">
-      <span class="tr-chevron">${ICONS.chevronRight}</span>
+      <span class="tr-chevron">${expanded ? ICONS.chevronDown : ICONS.chevronRight}</span>
       <span class="tool-icon">${ICONS.cursor}</span>
       <span class="tr-tool-name">${escapeHtml(toolName)}</span>
     </button>
-    <div class="tr-body" style="display:none">${createToolResultBody(args, result)}</div>`;
+    <div class="tr-body" style="${expanded ? '' : 'display:none'}">${createToolResultBody(args, result)}</div>`;
   attachCollapsible(strip, {
-    headerSelector: '.tr-summary',
-    bodySelector: '.tr-body',
+    headerSelector:  '.tr-summary',
+    bodySelector:    '.tr-body',
     chevronSelector: '.tr-chevron',
   });
   row.appendChild(strip);
@@ -713,18 +726,19 @@ export function toolStripSetRunning(strip, args = {}) {
 
 /** Morphs strip into the final collapsible result state. */
 export function toolStripFinalize(strip, toolName, args, result) {
-  strip.className = 'tool-strip tool-strip-result tool-inline';
+  const expanded = state.blocksDefaultExpanded;
+  strip.className = `tool-strip tool-strip-result tool-inline${expanded ? ' open' : ''}`;
   strip.innerHTML = `
     <button class="tr-summary">
-      <span class="tr-chevron">${ICONS.chevronRight}</span>
+      <span class="tr-chevron">${expanded ? ICONS.chevronDown : ICONS.chevronRight}</span>
       <span class="tool-icon">${ICONS.cursor}</span>
       <span class="tr-tool-name">${escapeHtml(toolName)}</span>
     </button>
-    <div class="tr-body" style="display:none">${createToolResultBody(args, result)}</div>`;
+    <div class="tr-body" style="${expanded ? '' : 'display:none'}">${createToolResultBody(args, result)}</div>`;
 
   attachCollapsible(strip, {
-    headerSelector: '.tr-summary',
-    bodySelector: '.tr-body',
+    headerSelector:  '.tr-summary',
+    bodySelector:    '.tr-body',
     chevronSelector: '.tr-chevron',
   });
 
