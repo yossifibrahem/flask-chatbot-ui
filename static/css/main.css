@@ -460,9 +460,9 @@ svg { flex-shrink: 0; }
   transition: color var(--fast), background var(--fast);
 }
 #model-badge:hover { color: var(--text); background: rgba(42,44,37,.8); }
-#model-badge.open { color: var(--accent); background: var(--accent-dim); }
-.model-icon { width: 12px; height: 12px; flex-shrink: 0; opacity: .6; }
+.model-icon { display: inline-flex; width: 12px; height: 12px; opacity: .6; flex-shrink: 0; }
 #model-badge.open .model-icon { opacity: 1; }
+#model-badge.open { color: var(--accent); background: var(--accent-dim); }
 #model-badge-label { overflow: hidden; text-overflow: ellipsis; max-width: 140px; }
 #model-badge-chevron { width: 11px; height: 11px; transition: transform .18s; }
 #model-badge.open #model-badge-chevron { transform: rotate(180deg); }

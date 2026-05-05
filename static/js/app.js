@@ -12,6 +12,7 @@ import { loadConversationList, openConversation, createNewConversation, persistC
 import { loadMcpConfig, saveMcpConfig, reloadTools, loadCachedTools } from './mcp.js';
 import { sendMessage, stopAssistantTurn, editAndResend, regenerateFrom, initImageAttachments } from './chat.js';
 import { clearMessages } from './renderer.js';
+import { ICONS } from './icons.js';
 
 // ── Event binding ─────────────────────────────────────────────────────────────
 
@@ -23,6 +24,9 @@ function bindSidebarEvents() {
 function bindModelPickerEvents() {
   const modelBadge   = document.getElementById('model-badge');
   const modelPopover = document.getElementById('model-popover');
+
+  // Prepend the AI avatar icon from the single source of truth in icons.js
+  modelBadge.insertAdjacentHTML('afterbegin', `<span class="model-icon">${ICONS.ai}</span>`);
 
   modelBadge.addEventListener('click', e => {
     e.stopPropagation();
