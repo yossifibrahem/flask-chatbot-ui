@@ -14,6 +14,10 @@ export async function loadConversationList() {
   const container = document.getElementById('conv-list');
   container.innerHTML = '';
 
+  // Re-apply search filter after reload if there's an active query
+  const searchInput = document.getElementById('conv-search');
+  const query = searchInput ? searchInput.value.trim().toLowerCase() : '';
+
   if (!list.length) {
     container.innerHTML = '<div class="conv-section-label conv-empty">No conversations yet</div>';
     return;
@@ -22,7 +26,19 @@ export async function loadConversationList() {
   container.appendChild(
     Object.assign(document.createElement('div'), { className: 'conv-section-label', textContent: 'Recent' })
   );
-  list.forEach(conv => container.appendChild(_buildConvItem(conv)));
+  list.forEach(conv => {
+    const item = _buildConvItem(conv);
+    if (query) {
+      const title = (conv.title || '').toLowerCase();
+      item.style.display = title.includes(query) ? '' : 'none';
+    }
+    container.appendChild(item);
+  });
+
+  // Re-apply section label visibility
+  if (query) {
+    container.querySelectorAll('.conv-section-label').forEach(l => l.style.display = 'none');
+  }
 }
 
 function _buildConvItem(conv) {

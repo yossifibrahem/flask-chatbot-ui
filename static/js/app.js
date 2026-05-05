@@ -21,6 +21,40 @@ import { loadCustomization, saveCustomization, resetCustomization, initSwatchPic
 function bindSidebarEvents() {
   document.getElementById('btn-toggle-sidebar').addEventListener('click', () => toggleSidebar());
   document.getElementById('btn-new-chat').addEventListener('click', startNewChat);
+
+  // Conversation search
+  const searchInput = document.getElementById('conv-search');
+  searchInput.addEventListener('input', () => {
+    const q = searchInput.value.trim().toLowerCase();
+    const convList = document.getElementById('conv-list');
+    const items    = convList.querySelectorAll('.conv-item');
+    let visible    = 0;
+
+    items.forEach(item => {
+      const title = (item.querySelector('.conv-title')?.textContent || '').toLowerCase();
+      const show  = !q || title.includes(q);
+      item.style.display = show ? '' : 'none';
+      if (show) visible++;
+    });
+
+    // Section label visibility
+    convList.querySelectorAll('.conv-section-label').forEach(label => {
+      label.style.display = q ? 'none' : '';
+    });
+
+    // No-results message
+    let noResults = convList.querySelector('.conv-search-empty');
+    if (!visible && q) {
+      if (!noResults) {
+        noResults = Object.assign(document.createElement('div'), { className: 'conv-search-empty' });
+        convList.appendChild(noResults);
+      }
+      noResults.textContent = `No results for "${searchInput.value}"`;
+      noResults.style.display = '';
+    } else if (noResults) {
+      noResults.style.display = 'none';
+    }
+  });
 }
 
 function bindModelPickerEvents() {

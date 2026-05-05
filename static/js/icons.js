@@ -39,6 +39,7 @@ export const ICONS = {
 
   // ── Conversation list ──────────────────────────────────────────────────────
   chat: icon('<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>'),
+  search: icon('<circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>', 'stroke-width="2.2"'),
 
   // ── Decorative / small ─────────────────────────────────────────────────────
   bulb:   icon('<path d="M9 18h6"/><path d="M10 22h4"/><path d="M12 2a7 7 0 0 0-4 12c0 1.5.5 2 1 3h6c.5-1 1-1.5 1-3a7 7 0 0 0-4-12z"/>', 'width="13" height="13"'),
