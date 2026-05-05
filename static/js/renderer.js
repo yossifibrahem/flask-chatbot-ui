@@ -7,10 +7,10 @@ import { ICONS } from './icons.js';
 
 const SUGGESTION_CHIPS = [
   { icon: ICONS.chipCode,       label: 'Code',       prompt: 'Help me write some code' },
-  { icon: ICONS.chipWrite,      label: 'Write',      prompt: 'Help me write something' },
-  { icon: ICONS.chipExplain,    label: 'Explain',    prompt: 'Explain a concept to me' },
-  { icon: ICONS.chipAnalyze,    label: 'Analyze',    prompt: 'Analyze this for me' },
-  { icon: ICONS.chipBrainstorm, label: 'Brainstorm', prompt: 'Help me brainstorm ideas about' },
+  { icon: ICONS.chipPencil,      label: 'Write',      prompt: 'Help me write something' },
+  { icon: ICONS.chipInfo,    label: 'Explain',    prompt: 'Explain a concept to me' },
+  { icon: ICONS.chipBox,    label: 'Analyze',    prompt: 'Analyze this for me' },
+  { icon: ICONS.chipHelp, label: 'Brainstorm', prompt: 'Help me brainstorm ideas about' },
 ];
 
 const BOTTOM_THRESHOLD = 32;
@@ -262,7 +262,7 @@ function createGroupBlock(elements) {
   group.innerHTML = `
     <button class="group-header">
       <span class="group-chevron">${ICONS.chevronRight}</span>
-      <span class="group-icon">${ICONS.stepsGroup}</span>
+      <span class="group-icon">${ICONS.layers}</span>
       <span class="group-label">${count} step${count > 1 ? 's' : ''}</span>
       <span class="group-sep">·</span>
       <span class="group-desc">${escapeHtml(summary)}</span>
@@ -568,7 +568,7 @@ function appendToolResultInline(toolName, args, result) {
   strip.innerHTML = `
     <button class="tr-summary">
       <span class="tr-chevron">${ICONS.chevronRight}</span>
-      <span class="tool-icon">${ICONS.toolSmall}</span>
+      <span class="tool-icon">${ICONS.cursor}</span>
       <span class="tr-tool-name">${escapeHtml(toolName)}</span>
     </button>
     <div class="tr-body" style="display:none">${createToolResultBody(args, result)}</div>`;
@@ -615,7 +615,7 @@ export function createToolStrip(toolName) {
   const strip = createElement('div', { className: 'tool-strip tool-strip-using' });
   strip.dataset.toolName = toolName;
   strip.innerHTML = `
-    <span class="tool-icon">${ICONS.toolSmall}</span>
+    <span class="tool-icon">${ICONS.cursor}</span>
     <span>using <span class="tui-name">${escapeHtml(toolName)}</span></span>
     <span class="thinking-pulse"></span>`;
   row.appendChild(strip);
@@ -635,7 +635,7 @@ export function toolStripSetApproval(strip, call) {
       <div class="tc-item-row">
         <button class="tc-item-header">
           <span class="tc-item-chevron">${ICONS.chevronDown}</span>
-          <span class="tool-icon">${ICONS.toolSmall}</span>
+          <span class="tool-icon">${ICONS.cursor}</span>
           <span class="tc-item-name">${escapeHtml(call.function.name)}</span>
           ${hasArgs ? '' : '<span class="tc-item-noargs">no arguments</span>'}
         </button>
@@ -692,10 +692,10 @@ export function toolStripSetRunning(strip, args = {}) {
       ${hasArgs
         ? `<button class="tc-item-header">
              <span class="tc-item-chevron">${ICONS.chevronRight}</span>
-             <span class="tool-icon">${ICONS.toolSmall}</span>
+             <span class="tool-icon">${ICONS.cursor}</span>
              <span>running <span class="tui-name">${escapeHtml(name)}</span></span>
            </button>`
-        : `<span class="tool-icon">${ICONS.toolSmall}</span>
+        : `<span class="tool-icon">${ICONS.cursor}</span>
            <span>running <span class="tui-name">${escapeHtml(name)}</span></span>`}
       <span class="thinking-pulse"></span>
     </div>
@@ -717,7 +717,7 @@ export function toolStripFinalize(strip, toolName, args, result) {
   strip.innerHTML = `
     <button class="tr-summary">
       <span class="tr-chevron">${ICONS.chevronRight}</span>
-      <span class="tool-icon">${ICONS.toolSmall}</span>
+      <span class="tool-icon">${ICONS.cursor}</span>
       <span class="tr-tool-name">${escapeHtml(toolName)}</span>
     </button>
     <div class="tr-body" style="display:none">${createToolResultBody(args, result)}</div>`;

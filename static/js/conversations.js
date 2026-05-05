@@ -5,6 +5,7 @@ import { state, STORAGE_KEYS } from './state.js';
 import { storage } from './storage.js';
 import { clearMessages, renderAllMessages, escapeHtml } from './renderer.js';
 import { toggleSidebar } from './ui.js';
+import { ICONS } from './icons.js';
 
 // ── Sidebar list ──────────────────────────────────────────────────────────────
 
@@ -35,14 +36,14 @@ function _buildConvItem(conv) {
 
   item.innerHTML = `
     <div class="conv-icon">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+      ${ICONS.chat}
     </div>
     <div class="conv-info">
       <div class="conv-title">${escapeHtml(conv.title)}</div>
       <div class="conv-meta">${conv.message_count} msg${conv.message_count !== 1 ? 's' : ''} · ${date}</div>
     </div>
     <button class="conv-del" title="Delete">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      ${ICONS.close}
     </button>`;
 
   item.addEventListener('click', e => { if (!e.target.closest('.conv-del')) openConversation(conv.id); });

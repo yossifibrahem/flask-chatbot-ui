@@ -28,19 +28,12 @@
   <div id="sidebar-header">
     <div class="logo">
       <div class="logo-mark">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M12 2L2 7l10 5 10-5-10-5z"/>
-          <path d="M2 17l10 5 10-5"/>
-          <path d="M2 12l10 5 10-5"/>
-        </svg>
+        <span data-icon="logo"></span>
       </div>
       <span class="logo-name">Lu<em>men</em></span>
     </div>
     <button id="btn-new-chat">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-        <line x1="12" y1="5" x2="12" y2="19"/>
-        <line x1="5"  y1="12" x2="19" y2="12"/>
-      </svg>
+      <span data-icon="plus"></span>
       New conversation
     </button>
   </div>
@@ -49,10 +42,7 @@
 
   <div id="sidebar-footer">
     <button class="sidebar-action" id="btn-open-settings">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <circle cx="12" cy="12" r="3"/>
-        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
-      </svg>
+      <span data-icon="settings"></span>
       Settings
     </button>
   </div>
@@ -62,11 +52,7 @@
 <main id="main" class="is-empty">
   <div id="chat-header">
     <button id="btn-toggle-sidebar" title="Toggle sidebar">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <line x1="3" y1="6"  x2="21" y2="6"/>
-        <line x1="3" y1="12" x2="21" y2="12"/>
-        <line x1="3" y1="18" x2="21" y2="18"/>
-      </svg>
+      <span data-icon="menu"></span>
     </button>
 
     <input id="chat-title-input" type="text" placeholder="Untitled Conversation" maxlength="80" />
@@ -86,18 +72,14 @@
       <div class="input-toolbar">
         <div class="toolbar-left">
           <button id="attach-btn" title="Attach images">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/>
-            </svg>
+            <span data-icon="paperclip"></span>
           </button>
           <input type="file" id="image-input" accept="image/*" multiple hidden />
 
           <div id="model-picker-wrap">
             <button id="model-badge" title="Click to change model">
               <span id="model-badge-label">No model</span>
-              <svg id="model-badge-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                <polyline points="6 9 12 15 18 9"/>
-              </svg>
+              <span id="model-badge-chevron" data-icon="chevronDown"></span>
             </button>
             <div id="model-popover">
               <div class="mp-header">Select model</div>
@@ -110,15 +92,10 @@
           <span class="char-count" id="char-count"></span>
           <span class="input-hint">⏎ send · ⇧⏎ newline</span>
           <button id="send-btn" title="Send (Enter)">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-              <line x1="22" y1="2" x2="11" y2="13"/>
-              <polygon points="22 2 15 22 11 13 2 9 22 2"/>
-            </svg>
+            <span data-icon="send"></span>
           </button>
           <button id="stop-btn" title="Stop generation" hidden>
-            <svg viewBox="0 0 24 24" fill="currentColor">
-              <rect x="6" y="6" width="12" height="12" rx="2"/>
-            </svg>
+            <span data-icon="stop"></span>
           </button>
         </div>
       </div>
@@ -138,10 +115,7 @@
         <button class="modal-tab"        data-tab="tab-mcp">MCP Servers</button>
       </nav>
       <button class="modal-close" data-close="settings-modal">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <line x1="18" y1="6" x2="6" y2="18"/>
-          <line x1="6"  y1="6" x2="18" y2="18"/>
-        </svg>
+        <span data-icon="close"></span>
       </button>
     </div>
 

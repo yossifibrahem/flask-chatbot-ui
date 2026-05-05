@@ -2,6 +2,7 @@
 
 import { api }   from './api.js';
 import { state } from './state.js';
+import { ICONS } from './icons.js';
 import {
   createStreamingMessage, appendMessage,
   cancelAllToolApprovals, finalizeStreamingMessage, setStreamingMessageLogIndex,
@@ -35,7 +36,7 @@ function refreshImagePreviewBar() {
     wrap.innerHTML = `
       <img class="img-preview-thumb img-preview-uploading" src="${img.previewUrl}" />
       <button class="img-preview-remove" title="Remove">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        ${ICONS.close}
       </button>`;
 
     const thumb = wrap.querySelector('.img-preview-thumb');

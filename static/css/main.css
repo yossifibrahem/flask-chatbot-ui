@@ -464,7 +464,8 @@ svg { flex-shrink: 0; }
 #model-badge.open .model-icon { opacity: 1; }
 #model-badge.open { color: var(--accent); background: var(--accent-dim); }
 #model-badge-label { overflow: hidden; text-overflow: ellipsis; max-width: 140px; }
-#model-badge-chevron { width: 11px; height: 11px; transition: transform .18s; }
+#model-badge-chevron { display: inline-flex; transition: transform .18s; }
+#model-badge-chevron svg { width: 11px; height: 11px; }
 #model-badge.open #model-badge-chevron { transform: rotate(180deg); }
 
 /* Popover opens UPWARD since toolbar is at bottom */

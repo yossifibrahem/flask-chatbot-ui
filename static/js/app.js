@@ -12,7 +12,7 @@ import { loadConversationList, openConversation, createNewConversation, persistC
 import { loadMcpConfig, saveMcpConfig, reloadTools, loadCachedTools } from './mcp.js';
 import { sendMessage, stopAssistantTurn, editAndResend, regenerateFrom, initImageAttachments } from './chat.js';
 import { clearMessages } from './renderer.js';
-import { ICONS } from './icons.js';
+import { ICONS, initIcons } from './icons.js';
 
 // ── Event binding ─────────────────────────────────────────────────────────────
 
@@ -144,6 +144,7 @@ function bindEvents() {
 // ── Boot sequence ─────────────────────────────────────────────────────────────
 
 (async () => {
+  initIcons();
   bindEvents();
   loadSettings();
   loadCachedTools();
