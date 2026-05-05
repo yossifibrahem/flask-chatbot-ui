@@ -64,6 +64,20 @@ export async function openConversation(id) {
   if (window.innerWidth <= 768) toggleSidebar(false);
 }
 
+// Resets the UI to an empty chat without touching the server.
+// The actual conversation record is created lazily on the first send (chat.js).
+export function startNewChat() {
+  state.convId     = null;
+  state.messages   = [];
+  state.displayLog = [];
+  storage.remove(STORAGE_KEYS.lastConv);
+  document.getElementById('chat-title-input').value = '';
+  clearMessages();
+  document.querySelectorAll('.conv-item.active').forEach(el => el.classList.remove('active'));
+  if (window.innerWidth <= 768) toggleSidebar(false);
+}
+
+// Creates a conversation record on the server. Called by chat.js before the first send.
 export async function createNewConversation() {
   const data = await api.post('/api/conversations', { title: 'New Conversation' });
   state.convId     = data.id;
@@ -71,7 +85,6 @@ export async function createNewConversation() {
   state.displayLog = [];
   storage.set(STORAGE_KEYS.lastConv, data.id);
   document.getElementById('chat-title-input').value = 'New Conversation';
-  clearMessages();
   await loadConversationList();
 }
 

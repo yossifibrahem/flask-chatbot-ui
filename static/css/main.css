@@ -373,23 +373,14 @@ svg { flex-shrink: 0; }
 
 /* The dock card itself */
 .input-dock {
-  background: rgba(24, 25, 22, 0.92);
-  backdrop-filter: blur(24px);
-  -webkit-backdrop-filter: blur(24px);
-  border: 1px solid var(--border2);
-  border-radius: 18px;
-  box-shadow:
-    0 2px 8px rgba(0,0,0,.3),
-    0 12px 40px rgba(0,0,0,.5),
-    0 0 0 1px rgba(255,255,255,.03) inset;
-  transition: border-color .2s, box-shadow .2s;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  box-shadow: var(--shadow);
+  transition: border-color var(--fast);
 }
 .input-dock:focus-within {
-  border-color: var(--accent-border);
-  box-shadow:
-    0 2px 8px rgba(0,0,0,.3),
-    0 12px 40px rgba(0,0,0,.5),
-    0 0 0 3px var(--accent-glow);
+  border-color: var(--accent-border-dim);
 }
 
 #image-preview-bar {
@@ -458,18 +449,18 @@ svg { flex-shrink: 0; }
   align-items: center;
   gap: 5px;
   padding: 5px 9px 5px 8px;
-  border: 1px solid var(--border);
+  border: none;
   border-radius: 20px;
-  background: var(--surface3);
+  background: none;
   color: var(--text2);
   font-family: var(--font-mono);
   font-size: .67rem;
   white-space: nowrap;
   max-width: 200px;
-  transition: color var(--fast), background var(--fast), border-color var(--fast);
+  transition: color var(--fast), background var(--fast);
 }
-#model-badge:hover { border-color: var(--border2); color: var(--text); background: rgba(42,44,37,.8); }
-#model-badge.open { border-color: var(--accent-border); color: var(--accent); background: var(--accent-dim); }
+#model-badge:hover { color: var(--text); background: rgba(42,44,37,.8); }
+#model-badge.open { color: var(--accent); background: var(--accent-dim); }
 .model-icon { width: 12px; height: 12px; flex-shrink: 0; opacity: .6; }
 #model-badge.open .model-icon { opacity: 1; }
 #model-badge-label { overflow: hidden; text-overflow: ellipsis; max-width: 140px; }
@@ -553,17 +544,15 @@ svg { flex-shrink: 0; }
   padding: 7px 14px;
   border: 1px solid var(--border);
   border-radius: 20px;
-  background: rgba(24, 25, 22, 0.7);
-  backdrop-filter: blur(12px);
+  background: var(--surface3);
   color: var(--text2);
   font-family: var(--font-mono);
   font-size: .7rem;
   cursor: pointer;
-  transition: all .18s;
+  transition: color var(--fast), border-color var(--fast), background var(--fast);
   white-space: nowrap;
 }
 .suggestion-chip:hover {
-  background: var(--surface2);
   border-color: var(--border2);
   color: var(--text);
 }

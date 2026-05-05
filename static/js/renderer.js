@@ -5,19 +5,12 @@ import { applyMarkdown } from './markdown.js';
 import { $, createElement, remove, setVisible } from './dom.js';
 import { ICONS } from './icons.js';
 
-const EMPTY_STATE_PROMPTS = [
-  { tag: 'EXPLAIN', label: 'How do transformers work in machine learning?', prompt: 'Explain how transformers work in machine learning' },
-  { tag: 'CODE',    label: 'Write a Python function to parse JSON safely',   prompt: 'Write a Python function to parse JSON with error handling' },
-  { tag: 'COMPARE', label: 'REST vs GraphQL — key differences',              prompt: 'What are the key differences between REST and GraphQL APIs?' },
-  { tag: 'WRITE',   label: 'Executive summary for a product launch',          prompt: 'Help me write a concise executive summary for a product launch' },
-];
-
 const SUGGESTION_CHIPS = [
-  { icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>`, label: 'Code', prompt: 'Help me write some code' },
-  { icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>`, label: 'Write', prompt: 'Help me write something' },
-  { icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>`, label: 'Explain', prompt: 'Explain a concept to me' },
-  { icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>`, label: 'Analyze', prompt: 'Analyze this for me' },
-  { icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>`, label: 'Brainstorm', prompt: 'Help me brainstorm ideas about' },
+  { icon: ICONS.chipCode,       label: 'Code',       prompt: 'Help me write some code' },
+  { icon: ICONS.chipWrite,      label: 'Write',      prompt: 'Help me write something' },
+  { icon: ICONS.chipExplain,    label: 'Explain',    prompt: 'Explain a concept to me' },
+  { icon: ICONS.chipAnalyze,    label: 'Analyze',    prompt: 'Analyze this for me' },
+  { icon: ICONS.chipBrainstorm, label: 'Brainstorm', prompt: 'Help me brainstorm ideas about' },
 ];
 
 const BOTTOM_THRESHOLD = 32;

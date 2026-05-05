@@ -8,7 +8,7 @@ import { storage }  from './storage.js';
 
 import { openModal, closeModal, toggleSidebar, autoResize, updateCharCount } from './ui.js';
 import { loadSettings, saveSettings, fetchModels }                           from './settings.js';
-import { loadConversationList, openConversation, createNewConversation, persistConversation } from './conversations.js';
+import { loadConversationList, openConversation, createNewConversation, persistConversation, startNewChat } from './conversations.js';
 import { loadMcpConfig, saveMcpConfig, reloadTools, loadCachedTools } from './mcp.js';
 import { sendMessage, stopAssistantTurn, editAndResend, regenerateFrom, initImageAttachments } from './chat.js';
 import { clearMessages } from './renderer.js';
@@ -17,7 +17,7 @@ import { clearMessages } from './renderer.js';
 
 function bindSidebarEvents() {
   document.getElementById('btn-toggle-sidebar').addEventListener('click', () => toggleSidebar());
-  document.getElementById('btn-new-chat').addEventListener('click', createNewConversation);
+  document.getElementById('btn-new-chat').addEventListener('click', startNewChat);
 }
 
 function bindModelPickerEvents() {
@@ -123,7 +123,7 @@ function bindKeyboardEvents() {
     }
     if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
       e.preventDefault();
-      createNewConversation();
+      startNewChat();
     }
   });
 }
