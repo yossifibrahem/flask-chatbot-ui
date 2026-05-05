@@ -441,8 +441,12 @@ function getRawText(content) {
   return content.map(part => part.text || '').join('\n');
 }
 
+function isBlankAssistantMessage(role, content) {
+  return role === 'assistant' && typeof content === 'string' && content.trim() === '';
+}
+
 export function appendMessage(role, content, logIndex = -1) {
-  if (!content) return null;
+  if (!content || isBlankAssistantMessage(role, content)) return null;
 
   const isUser = role === 'user';
   const row = isUser
