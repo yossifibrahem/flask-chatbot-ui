@@ -3,7 +3,7 @@
 // This module's only job is to wire UI events to domain functions.
 // No business logic lives here.
 
-import { STORAGE_KEYS } from './state.js';
+import { STORAGE_KEYS, state } from './state.js';
 import { storage }  from './storage.js';
 
 import { openModal, closeModal, toggleSidebar, autoResize, updateCharCount } from './ui.js';
@@ -13,6 +13,7 @@ import { loadMcpConfig, saveMcpConfig, reloadTools, loadCachedTools } from './mc
 import { sendMessage, stopAssistantTurn, editAndResend, regenerateFrom, initImageAttachments } from './chat.js';
 import { clearMessages } from './renderer.js';
 import { ICONS, initIcons } from './icons.js';
+import { loadCustomization, saveCustomization, resetCustomization, initSwatchPicker } from './customization.js';
 
 // ── Event binding ─────────────────────────────────────────────────────────────
 
@@ -60,10 +61,10 @@ function bindModalEvents() {
       document.querySelectorAll('.tab-footer-btn').forEach(b => b.classList.remove('active'));
       tab.classList.add('active');
       document.getElementById(targetId).classList.add('active');
-      document.querySelector(`.tab-footer-btn[data-for-tab="${targetId}"]`)?.classList.add('active');
+      document.querySelectorAll(`.tab-footer-btn[data-for-tab="${targetId}"]`).forEach(b => b.classList.add('active'));
     });
   });
-  document.querySelector('.tab-footer-btn[data-for-tab="tab-settings"]').classList.add('active');
+  document.querySelectorAll('.tab-footer-btn[data-for-tab="tab-settings"]').forEach(b => b.classList.add('active'));
 }
 
 function bindSettingsEvents() {
@@ -71,6 +72,9 @@ function bindSettingsEvents() {
   document.getElementById('btn-fetch-models').addEventListener('click', fetchModels);
   document.getElementById('btn-save-mcp').addEventListener('click', saveMcpConfig);
   document.getElementById('btn-reload-tools').addEventListener('click', reloadTools);
+  document.getElementById('btn-save-customization').addEventListener('click', saveCustomization);
+  document.getElementById('btn-reset-customization').addEventListener('click', resetCustomization);
+  initSwatchPicker();
 }
 
 function bindInputEvents() {
@@ -147,6 +151,7 @@ function bindEvents() {
   initIcons();
   bindEvents();
   loadSettings();
+  loadCustomization();
   loadCachedTools();
   await loadConversationList();
   await loadMcpConfig();
@@ -163,8 +168,10 @@ function bindEvents() {
     clearMessages(); // Show empty state when no conversation exists
   }
 
-  const sidebarOpen = storage.get(STORAGE_KEYS.sidebar, true);
+  const sidebarOpen = state.sidebarDefaultOpen;
   // Always start collapsed on mobile — sidebar overlays content there
   const shouldOpen = window.innerWidth <= 768 ? false : sidebarOpen;
+  // Remove the CSS pre-collapse class — JS takes over from here
+  document.documentElement.classList.remove('sidebar-init-closed');
   if (!shouldOpen) toggleSidebar(false);
 })();

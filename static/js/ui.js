@@ -1,7 +1,7 @@
 // Generic UI helpers — no domain knowledge, no API calls.
 
 import { storage }     from './storage.js';
-import { STORAGE_KEYS } from './state.js';
+import { STORAGE_KEYS, state } from './state.js';
 
 // ── Toast & status ────────────────────────────────────────────────────────────
 
@@ -72,5 +72,5 @@ export function updateCharCount() {
   const count = document.getElementById('char-count');
   const len   = input.value.length;
   count.textContent = len > 100 ? `${len} chars` : '';
-  count.classList.toggle('warn', len > 3000);
+  count.classList.toggle('warn', len > (state.charWarnThreshold || 3000));
 }

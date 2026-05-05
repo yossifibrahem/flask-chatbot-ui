@@ -20,6 +20,55 @@
 
 <!-- App styles -->
 <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}" />
+
+<!-- Apply saved customization before first paint to prevent flash of defaults -->
+<script>
+(function () {
+  try {
+    var prefs = JSON.parse(localStorage.getItem('lumen_customization') || '{}');
+    var r = document.documentElement;
+
+    // Accent color
+    var hex = prefs.accentColor;
+    if (hex && /^#[0-9a-f]{6}$/i.test(hex)) {
+      var m = /^#([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+      var rgb = parseInt(m[1],16)+','+parseInt(m[2],16)+','+parseInt(m[3],16);
+      r.style.setProperty('--accent',            hex);
+      r.style.setProperty('--accent-dim',        'rgba('+rgb+',0.12)');
+      r.style.setProperty('--accent-glow',       'rgba('+rgb+',0.06)');
+      r.style.setProperty('--accent-border',     'rgba('+rgb+',0.4)');
+      r.style.setProperty('--accent-border-dim', 'rgba('+rgb+',0.25)');
+    }
+
+    // Font size
+    var sizes = { small: '13px', medium: '15px', large: '17px' };
+    if (prefs.fontSize && sizes[prefs.fontSize]) {
+      r.style.setProperty('--font-size-base', sizes[prefs.fontSize]);
+    }
+
+    // Body classes on <html> (body doesn't exist yet)
+    if (prefs.showTimestamps === false)        r.classList.add('hide-timestamps');
+    if (prefs.showSuggestionChips === false)   r.classList.add('hide-suggestion-chips');
+
+    // Sidebar — collapse immediately if default is closed.
+    // Read sidebarDefaultOpen; default is true, so only act when explicitly false.
+    if (prefs.sidebarDefaultOpen === false) {
+      r.classList.add('sidebar-init-closed');
+    }
+
+    // Suppress all transitions during initial paint so nothing animates in
+    r.classList.add('no-transition');
+    document.addEventListener('DOMContentLoaded', function () {
+      // One rAF to let the browser paint the settled state, then re-enable transitions
+      requestAnimationFrame(function () {
+        requestAnimationFrame(function () {
+          r.classList.remove('no-transition');
+        });
+      });
+    });
+  } catch (e) {}
+})();
+</script>
 </head>
 <body>
 
@@ -113,6 +162,7 @@
       <nav class="modal-tabs">
         <button class="modal-tab active" data-tab="tab-settings">Settings</button>
         <button class="modal-tab"        data-tab="tab-mcp">MCP Servers</button>
+        <button class="modal-tab"        data-tab="tab-customization">Customization</button>
       </nav>
       <button class="modal-close" data-close="settings-modal">
         <span data-icon="close"></span>
@@ -160,12 +210,90 @@
           <div class="no-tools-label">No tools loaded — click Reload Tools</div>
         </div>
       </div>
+
+      <div id="tab-customization" class="tab-panel">
+        <!-- Layout -->
+        <div class="section-title">Layout</div>
+        <div class="cust-row">
+          <div class="cust-row-label">
+            <span class="cust-label">Sidebar default state</span>
+            <span class="cust-hint">Whether the sidebar is open when the app loads</span>
+          </div>
+          <label class="cust-toggle">
+            <input type="checkbox" id="cust-sidebar-open" />
+            <span class="cust-toggle-track"><span class="cust-toggle-thumb"></span></span>
+            <span class="cust-toggle-text"></span>
+          </label>
+        </div>
+        <div class="cust-row">
+          <div class="cust-row-label">
+            <span class="cust-label">Show suggestion chips</span>
+            <span class="cust-hint">Prompt shortcuts shown on new conversations</span>
+          </div>
+          <label class="cust-toggle">
+            <input type="checkbox" id="cust-suggestion-chips" />
+            <span class="cust-toggle-track"><span class="cust-toggle-thumb"></span></span>
+            <span class="cust-toggle-text"></span>
+          </label>
+        </div>
+        <div class="cust-row">
+          <div class="cust-row-label">
+            <span class="cust-label">Show message timestamps</span>
+            <span class="cust-hint">Display time next to each message</span>
+          </div>
+          <label class="cust-toggle">
+            <input type="checkbox" id="cust-timestamps" />
+            <span class="cust-toggle-track"><span class="cust-toggle-thumb"></span></span>
+            <span class="cust-toggle-text"></span>
+          </label>
+        </div>
+
+        <div class="section-sep"></div>
+
+        <!-- Typography -->
+        <div class="section-title">Typography</div>
+        <div class="field">
+          <label>Font size</label>
+          <select id="cust-font-size">
+            <option value="small">Small (13px)</option>
+            <option value="medium">Medium (15px)</option>
+            <option value="large">Large (17px)</option>
+          </select>
+        </div>
+
+        <div class="section-sep"></div>
+
+        <!-- Accent colour -->
+        <div class="section-title">Accent Color</div>
+        <div class="cust-swatches">
+          <button class="cust-swatch" data-color="#c9a96e" title="Gold" style="--sw: #c9a96e;"></button>
+          <button class="cust-swatch" data-color="#6fa3c9" title="Blue" style="--sw: #6fa3c9;"></button>
+          <button class="cust-swatch" data-color="#6db87a" title="Green" style="--sw: #6db87a;"></button>
+          <button class="cust-swatch" data-color="#c96e9a" title="Pink" style="--sw: #c96e9a;"></button>
+          <button class="cust-swatch" data-color="#9a6ec9" title="Purple" style="--sw: #9a6ec9;"></button>
+          <button class="cust-swatch" data-color="#c97a6e" title="Coral" style="--sw: #c97a6e;"></button>
+          <button class="cust-swatch" data-color="#6ec9be" title="Teal" style="--sw: #6ec9be;"></button>
+          <button class="cust-swatch" data-color="#e0c870" title="Yellow" style="--sw: #e0c870;"></button>
+        </div>
+
+        <div class="section-sep"></div>
+
+        <!-- Input -->
+        <div class="section-title">Input</div>
+        <div class="field">
+          <label>Character count warning threshold</label>
+          <input type="number" id="cust-char-warn" min="500" max="32000" step="500" placeholder="3000" />
+          <div class="field-note">Show a warning when the message exceeds this many characters.</div>
+        </div>
+      </div>
     </div>
 
     <div class="modal-footer">
       <button class="btn-secondary" data-close="settings-modal">Close</button>
+      <button class="btn-secondary tab-footer-btn" data-for-tab="tab-customization" id="btn-reset-customization">Reset</button>
       <button class="btn-primary tab-footer-btn" data-for-tab="tab-settings" id="btn-save-settings">Save Settings</button>
       <button class="btn-primary tab-footer-btn" data-for-tab="tab-mcp"      id="btn-save-mcp">Save Config</button>
+      <button class="btn-primary tab-footer-btn" data-for-tab="tab-customization" id="btn-save-customization">Save</button>
     </div>
   </div>
 </div>

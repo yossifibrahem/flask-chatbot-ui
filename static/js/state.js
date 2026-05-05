@@ -6,6 +6,15 @@ export const SETTINGS_DEFAULTS = {
   systemPrompt: '',
 };
 
+export const CUSTOMIZATION_DEFAULTS = {
+  sidebarDefaultOpen:    true,
+  showSuggestionChips:   true,
+  showTimestamps:        true,
+  fontSize:              'medium',   // 'small' | 'medium' | 'large'
+  accentColor:           '#c9a96e',  // original gold
+  charWarnThreshold:     3000,
+};
+
 export const STORAGE_KEYS = {
   settings:          'lumen_settings',
   mcpTools:          'lumen_mcp_tools',
@@ -13,6 +22,7 @@ export const STORAGE_KEYS = {
   models:            'lumen_models',
   lastConv:          'lumen_last_conv',
   sidebar:           'lumen_sidebar',
+  customization:     'lumen_customization',
 };
 
 // Single mutable state object shared across all modules.
@@ -26,4 +36,5 @@ export const state = {
   isStreaming:       false,
   streamId:          null,
   ...SETTINGS_DEFAULTS,
+  ...CUSTOMIZATION_DEFAULTS,
 };
