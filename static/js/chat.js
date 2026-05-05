@@ -170,13 +170,32 @@ function finishAssistantTurn() {
   setStreaming(false);
 }
 
+async function generateConversationTitle() {
+  try {
+    const result = await api.post('/api/generate-title', {
+      api_base: state.apiBase,
+      api_key:  state.apiKey,
+      model:    state.model || 'gpt-4o',
+      messages: state.messages.slice(0, 4),
+    });
+    if (result.title && !result.error) {
+      document.getElementById('chat-title-input').value = result.title;
+      await persistConversation();
+    }
+  } catch { /* silently skip title generation on failure */ }
+}
+
 async function runAssistantTurnAndPersist() {
+  const isFirstMessage = state.messages.length === 1;
   setStreaming(true);
   turnCancelled = false;
 
   try {
     await runChatLoop();
     await persistConversation();
+    if (isFirstMessage && !turnCancelled) {
+      await generateConversationTitle();
+    }
   } finally {
     finishAssistantTurn();
   }
@@ -210,11 +229,6 @@ export async function sendMessage(userText) {
   const textToSend   = userText.trim();
   const imagesToSend = pendingImages.splice(0);
   refreshImagePreviewBar();
-
-  if (state.messages.length === 0 && textToSend) {
-    document.getElementById('chat-title-input').value =
-      textToSend.slice(0, 42) + (textToSend.length > 42 ? '…' : '');
-  }
 
   // Await any in-progress uploads before building the payload.
   const uploadedRefs = await Promise.all(imagesToSend.map(img => img.uploadPromise));

@@ -133,6 +133,35 @@ def serve_image(name: str):
     return send_file(path, mimetype=mime)
 
 
+# ── Title generation ──────────────────────────────────────────────────────────
+
+@blueprint.route("/api/generate-title", methods=["POST"])
+def generate_title():
+    body = _body()
+    client = _openai_client(body)
+    messages = body.get("messages", [])
+    try:
+        response = client.chat.completions.create(
+            model=body.get("model", "gpt-4o"),
+            messages=[
+                {
+                    "role": "system",
+                    "content": (
+                        "Generate a short, concise title (4–6 words) for this conversation. "
+                        "Reply with ONLY the title — no quotes, no punctuation at the end."
+                    ),
+                },
+                *messages[:4],
+            ],
+            max_tokens=20,
+            temperature=0.7,
+        )
+        title = response.choices[0].message.content.strip().strip("\"'")
+        return jsonify({"title": title})
+    except Exception as exc:
+        return jsonify({"error": str(exc)}), 400
+
+
 # ── Chat ──────────────────────────────────────────────────────────────────────
 
 @blueprint.route("/api/chat/stream", methods=["POST"])
