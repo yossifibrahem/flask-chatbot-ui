@@ -6,17 +6,17 @@ module, and return JSON.  No business logic lives here.
 """
 from __future__ import annotations
 
+import json
+import re
 import threading
 import uuid
 
-from flask import Blueprint, jsonify, render_template, request
+from flask import Blueprint, jsonify, render_template, request, send_file
 from openai import OpenAI
 
 import mcp_service
 import store
 import streaming as stream_module
-
-import re
 
 blueprint = Blueprint("main", __name__)
 
@@ -126,7 +126,6 @@ def upload_image():
 
 @blueprint.route("/api/images/<name>", methods=["GET"])
 def serve_image(name: str):
-    from flask import send_file
     path = store.get_image_path(name)
     if not path:
         return jsonify({"error": "Not found"}), 404
@@ -137,25 +136,70 @@ def serve_image(name: str):
 
 # ── Title generation ──────────────────────────────────────────────────────────
 
-@blueprint.route("/api/generate-title", methods=["POST"])
-def generate_title():
-    body = _body()
-    client = _openai_client(body)
-    messages = body.get("messages", [])
-    parsed_messages = ""
+_SET_TITLE_TOOL = {
+    "type": "function",
+    "function": {
+        "name": "set_title",
+        "description": "Set the conversation title.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "title": {
+                    "type": "string",
+                    "description": "The conversation title.",
+                },
+            },
+            "required": ["title"],
+        },
+    },
+}
+
+
+def _messages_to_text(messages: list) -> str:
+    """Flatten a message list to a plain role: content string for title prompting."""
+    lines = []
     for msg in messages:
         role = msg.get("role", "")
         if role not in {"user", "assistant"}:
             continue
         content = msg.get("content", "")
-        ## remove /n/n from content
-        content = content.replace("\n\n", "").strip()
-        if content == "":
-            continue
-        if role and content:
-            parsed_messages += f"{role}: {content}\n"
-        
-    
+        if isinstance(content, list):
+            content = " ".join(p.get("text", "") for p in content if p.get("type") == "text")
+        content = content.replace("\n\n", " ").strip()
+        if content:
+            lines.append(f"{role}: {content}")
+    return "\n".join(lines)
+
+
+def _extract_title(message) -> str:
+    """Extract the title from a completion message.
+
+    Tries three formats in order:
+      1. Structured tool_calls (standard OpenAI-compatible response)
+      2. JSON inside <tool_call> in reasoning_content  (e.g. qwopus3.5)
+      3. XML  inside <tool_call> in reasoning_content  (e.g. qwen3.5)
+    """
+    if message.tool_calls:
+        args = json.loads(message.tool_calls[0].function.arguments)
+        return args["title"]
+
+    reasoning = getattr(message, "reasoning_content", "") or ""
+
+    json_match = re.search(r"<tool_call>\s*(\{.*?})\s*</tool_call>", reasoning, re.DOTALL)
+    if json_match:
+        return json.loads(json_match.group(1))["arguments"]["title"]
+
+    xml_match = re.search(r"<parameter=title>\s*(.*?)\s*</parameter>", reasoning, re.DOTALL)
+    if xml_match:
+        return xml_match.group(1).strip()
+
+    raise ValueError("Model did not return a tool call")
+
+
+@blueprint.route("/api/generate-title", methods=["POST"])
+def generate_title():
+    body   = _body()
+    client = _openai_client(body)
     try:
         response = client.chat.completions.create(
             model=body.get("model", "gpt-4o"),
@@ -163,23 +207,20 @@ def generate_title():
                 {
                     "role": "system",
                     "content": (
-                        "Generate a short, concise title (4–6 words) for this conversation. "
-                        "Reply with ONLY the title — no quotes, no punctuation at the end. "
-                        "Don't overthink it; just give me a quick label that captures the main topic. "
-                        "Write the title like this: {Title Here}"
+                        "Call set_title with a 2–5 word Title Case title for this conversation.\n"
+                        "The title must name the specific subject, not describe the interaction.\n\n"
+                        "Good: 'Fibonacci Sequence in Python', 'Docker Volume Permissions', 'JWT Token Expiry Bug'\n"
+                        "Bad: 'Coding Help' (too vague), 'Asking About Docker' (action not topic), 'General Question' (meaningless)"
                     ),
                 },
-                {"role": "user", "content": parsed_messages.strip()},
+                {"role": "user", "content": _messages_to_text(body.get("messages", []))},
             ],
-            max_tokens=512,
+            tools=[_SET_TITLE_TOOL],
+            tool_choice="required",
+            max_tokens=256,
             temperature=0.7,
         )
-        title = response.choices[0].message.content.strip()
-        # Extract title from the model's response using regex
-        match = re.search(r"\{(.+?)\}", title)
-        if match:
-            title = match.group(1)
-        return jsonify({"title": title})
+        return jsonify({"title": _extract_title(response.choices[0].message)})
     except Exception as exc:
         return jsonify({"error": str(exc)}), 400
 
