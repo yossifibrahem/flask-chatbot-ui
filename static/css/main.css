@@ -34,7 +34,7 @@
   --ease: cubic-bezier(.4,0,.2,1);
 }
 
-html, body { height: 100dvh; overflow: hidden; }
+html, body { height: var(--vvh, 100dvh); overflow: hidden; }
 html { font-size: var(--font-size-base, 15px); }
 body {
   font-family: var(--font-sans);
@@ -293,7 +293,7 @@ svg { flex-shrink: 0; }
 .conv-del:hover { color: var(--red); }
 .conv-del svg { width: 11px; height: 11px; }
 
-#sidebar-footer { border-top: 1px solid var(--border); padding: 10px 8px; display: flex; flex-direction: column; gap: 2px; }
+#sidebar-footer { padding: 10px 8px; display: flex; flex-direction: column; gap: 2px; }
 .sidebar-action {
   gap: 9px;
   width: 100%;
@@ -313,7 +313,7 @@ svg { flex-shrink: 0; }
   flex: 1;
   display: flex;
   flex-direction: column;
-  height: 100dvh;
+  height: var(--vvh, 100dvh);
   overflow: hidden;
   position: relative;
   transition: margin-left .28s var(--ease);
@@ -793,13 +793,13 @@ svg { flex-shrink: 0; }
 
 @media (max-width: 768px) {
   :root { --sidebar-w: 280px; }
-  #sidebar { position: fixed; left: 0; top: 0; bottom: 0; z-index: 100; height: 100dvh; transform: translateX(calc(-1 * var(--sidebar-w))); transition: transform .28s var(--ease); }
+  #sidebar { position: fixed; left: 0; top: 0; bottom: 0; z-index: 100; height: var(--vvh, 100dvh); transform: translateX(calc(-1 * var(--sidebar-w))); transition: transform .28s var(--ease); }
   #sidebar:not(.collapsed) { transform: translateX(0); box-shadow: 8px 0 40px rgba(0,0,0,.6); }
   #sidebar.collapsed { position: fixed; transform: translateX(calc(-1 * var(--sidebar-w))); }
   #main { margin-left: 0 !important; }
   #chat-header { height: calc(50px + env(safe-area-inset-top, 0px)); padding: env(safe-area-inset-top, 0px) 12px 0; gap: 8px; }
   #chat-title-input { font-size: .82rem; }
-  #input-area { bottom: 12px; width: calc(100% - 24px); }
+  #input-area { bottom: env(safe-area-inset-bottom, 12px); width: calc(100% - 24px); }
   #main.is-empty #input-area { transform: translateX(-50%) translateY(-50%); }
   .msg-row { padding: 12px 14px 4px; }
   .msg-row:first-child { padding-top: 18px; }

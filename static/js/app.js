@@ -6,7 +6,7 @@
 import { STORAGE_KEYS, state } from './state.js';
 import { storage }  from './storage.js';
 
-import { openModal, closeModal, toggleSidebar, autoResize, updateCharCount } from './ui.js';
+import { openModal, closeModal, toggleSidebar, autoResize, updateCharCount, initMobileKeyboardHandling } from './ui.js';
 import { loadSettings, saveSettings, fetchModels }                           from './settings.js';
 import { loadConversationList, openConversation, createNewConversation, persistConversation, startNewChat } from './conversations.js';
 import { loadMcpConfig, saveMcpConfig, reloadTools, loadCachedTools } from './mcp.js';
@@ -197,6 +197,7 @@ function bindEvents() {
 
 (async () => {
   initIcons();
+  initMobileKeyboardHandling();   // must run early — sets --vvh before first paint
   bindEvents();
   loadSettings();
   loadCustomization();
