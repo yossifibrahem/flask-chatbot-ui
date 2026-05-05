@@ -153,7 +153,7 @@ def generate_title():
                 },
                 *messages[:4],
             ],
-            max_tokens=20,
+            max_tokens=512,
             temperature=0.7,
         )
         title = response.choices[0].message.content.strip().strip("\"'")
